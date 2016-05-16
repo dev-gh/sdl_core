@@ -14,7 +14,7 @@ if %GEN_TYPE% == WinQt_x86 (
   goto end
 )
 if %GEN_TYPE% == WinNative_x64 (
-  set CMAKE_COMMAND=cmake -G %SDL_CMAKE_GENERATOR_NAME% %SDL_ROOT%
+  set CMAKE_COMMAND=cmake -G %SDL_CMAKE_GENERATOR_NAME% %SDL_ROOT% -DBUILD_TESTS=on
   @echo Generating for the win native x64: !CMAKE_COMMAND!
   call !CMAKE_COMMAND!
   goto end

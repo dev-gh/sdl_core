@@ -48,6 +48,91 @@
 # include <unistd.h>  // NOLINT
 #endif
 
+#ifndef __linux__
+#include <Windows.h>
+const __int64 DELTA_EPOCH_IN_MICROSECS = 11644473600000000;
+
+struct timezone
+{
+	__int32  tz_minuteswest; /* minutes W of Greenwich */
+	bool  tz_dsttime;     /* type of dst correction */
+};
+
+struct timeval {
+	__int32    tv_sec;         /* seconds */
+	__int32    tv_usec;        /* microseconds */
+};
+
+int gettimeofday(struct timeval *tv/*in*/, struct timezone *tz/*in*/)
+{
+	tz = NULL;
+
+	FILETIME ft;
+	__int64 tmpres = 0;
+	TIME_ZONE_INFORMATION tz_winapi;
+	int rez = 0;
+
+	ZeroMemory(&ft, sizeof(ft));
+	ZeroMemory(&tz_winapi, sizeof(tz_winapi));
+
+	GetSystemTimeAsFileTime(&ft);
+
+	tmpres = ft.dwHighDateTime;
+	tmpres <<= 32;
+	tmpres |= ft.dwLowDateTime;
+
+	/*converting file time to unix epoch*/
+	tmpres /= 10;  /*convert into microseconds*/
+	tmpres -= DELTA_EPOCH_IN_MICROSECS;
+	tv->tv_sec = static_cast<__int32>(tmpres*0.000001);
+	tv->tv_usec = (tmpres % 1000000);
+
+	//_tzset(),don't work properly, so we use GetTimeZoneInformation
+	rez = GetTimeZoneInformation(&tz_winapi);
+	//tz->tz_dsttime = (rez == 2) ? true : false;
+	//tz->tz_minuteswest = tz_winapi.Bias + ((rez == 2) ? tz_winapi.DaylightBias : 0);
+
+	return 0;
+}
+
+void timersub(struct timeval* x, struct timeval* y, struct timeval* res) {
+  double x_ms, y_ms;
+
+  x_ms = static_cast<double>(x->tv_sec) * 1000000 + static_cast<double>(x->tv_usec);
+  y_ms = static_cast<double>(y->tv_sec) * 1000000 + static_cast<double>(y->tv_usec);
+
+  res->tv_usec = static_cast<__int32>((double)y_ms - (double)x_ms);
+}
+
+void timerclear(struct timeval *tvp) {
+	tvp->tv_sec = 0;
+	tvp->tv_usec = 0;
+}
+
+bool timerisset(struct timeval *tvp) {
+	if (tvp->tv_sec == 0 || tvp->tv_usec == 0) {
+		return false;
+	}
+	return true;
+}
+
+#define timercmp(a, b, CMP) 						      \
+  (((a)->tv_sec == (b)->tv_sec) ? 					      \
+   ((a)->tv_usec CMP (b)->tv_usec) : 					      \
+   ((a)->tv_sec CMP (b)->tv_sec))
+
+void usleep(int waitTime) {
+	__int64 time1 = 0, time2 = 0, freq = 0;
+
+	QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&time1));
+	QueryPerformanceFrequency(reinterpret_cast<LARGE_INTEGER*>(&freq));
+
+	do {
+		QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&time2));
+	} while ((time2 - time1) < waitTime);
+}
+#endif // __linux__
+
 namespace testing {
 namespace internal {
 
@@ -72,6 +157,7 @@ void UnlockAndSleep(const long usecs) {
   ::std::ostringstream s;
   s << "Sleeping for " << 0.001 * usecs << "mSecs" << ::std::endl;
   Log(testing::internal::kInfo, s.str(), 0);
+  //Sleep(usecs);
   usleep(usecs);
   g_gmock_mutex.Lock();
 }
@@ -79,7 +165,7 @@ void UnlockAndSleep(const long usecs) {
 // Return time structure with the current date/time stamp
 timeval GetCurrentTime() {
   timeval now;
-  gettimeofday(&now, NULL);
+  gettimeofday((::timeval*)&now, NULL);
   return now;
 }
 
@@ -87,7 +173,7 @@ timeval GetCurrentTime() {
 long UsecsElapsed(const timeval start_time) {
   timeval now = GetCurrentTime();
   timeval priviously_elapsed;
-  timersub(&now, &start_time, &priviously_elapsed);
+  timersub((::timeval*)&now, (::timeval*)&start_time, (::timeval*)&priviously_elapsed);
   return priviously_elapsed.tv_sec*1000000L + priviously_elapsed.tv_usec;
 }
 
@@ -286,7 +372,7 @@ void ReportUninterestingCall(CallReaction reaction, const string& msg) {
 
 UntypedFunctionMockerBase::UntypedFunctionMockerBase()
     : mock_obj_(NULL), name_("") {
-  timerclear(&registered_time_);
+  timerclear((::timeval*)&registered_time_);
 }
 
 UntypedFunctionMockerBase::~UntypedFunctionMockerBase() {}
@@ -302,7 +388,7 @@ void UntypedFunctionMockerBase::RegisterOwner(const void* mock_obj)
     mock_obj_ = mock_obj;
   }
   Mock::Register(mock_obj, this);
-  gettimeofday(&registered_time_, NULL);
+  gettimeofday((::timeval*)&registered_time_, NULL);
 }
 
 // Sets the mock object this mock method belongs to, and sets the name
@@ -357,7 +443,11 @@ const char* UntypedFunctionMockerBase::Name() const
 timeval UntypedFunctionMockerBase::RegisteredTime() const
     GTEST_LOCK_EXCLUDED_(g_gmock_mutex) {
   g_gmock_mutex.AssertHeld();
-  Assert(timerisset(&registered_time_), __FILE__, __LINE__,
+  Assert(
+	  static_cast<bool>(
+	  timerisset((::timeval*)&registered_time_)
+	  ), 
+	  __FILE__, __LINE__,
          "RegisteredTime() must not be called before SetOwnerAndName() has "
          "been called.");
   return registered_time_;
@@ -761,7 +851,7 @@ bool Mock::AsyncVerifyAndClearExpectations(int timeout_msec)
   return AsyncVerifyAndClearExpectationsLocked(timeout_msec);
 }
 
-bool Mock::AsyncVerifyAndClearExpectationsLocked(const int timeout_msec_in)
+bool Mock::AsyncVerifyAndClearExpectationsLocked(int timeout_msec)
     GTEST_EXCLUSIVE_LOCK_REQUIRED_(internal::g_gmock_mutex) {
   internal::g_gmock_mutex.AssertHeld();
   MockObjectRegistry::StateMap& state_map = g_mock_object_registry.states();
@@ -772,8 +862,10 @@ bool Mock::AsyncVerifyAndClearExpectationsLocked(const int timeout_msec_in)
 
   // TODO(ezamakhov@gmail.com): refactor the next loops
   bool expectations_met = true;
-  timeval first_register_time {0, 0};
-  int timeout_msec = timeout_msec_in;
+  timeval first_register_time;
+  first_register_time.tv_sec = 0;
+  first_register_time.tv_usec = 0;
+
   for (MockObjectRegistry::StateMap::iterator mock_it = state_map.begin();
       state_map.end() != mock_it; ++mock_it) {
     MockObjectState& state = mock_it->second;
@@ -792,7 +884,7 @@ bool Mock::AsyncVerifyAndClearExpectationsLocked(const int timeout_msec_in)
       internal::UntypedFunctionMockerBase* base = *it;
 
       const timeval register_time = base->RegisteredTime();
-      if (!timerisset(&first_register_time) ||
+      if (!timerisset((::timeval*)&first_register_time) ||
          timercmp(&register_time, &first_register_time, <)) {
         first_register_time = register_time;
       }
@@ -828,15 +920,11 @@ bool Mock::AsyncVerifyAndClearExpectationsLocked(const int timeout_msec_in)
     if (expectations_met) {
       const long elapsed_usecs =
           // first_register_time is empty on no expectations in mocks
-          timerisset(&first_register_time)
+          timerisset((::timeval*)&first_register_time)
           ? internal::UsecsElapsed(first_register_time)
           : 100 * 1000;
-      // To avoid waitings very long times.
-      const long max_sleep_time = timeout_msec_in * 10 * 1000;
-      if (max_sleep_time > elapsed_usecs * 2) {
-        // Wait double times
-        internal::UnlockAndSleep(elapsed_usecs * 2);
-      }
+      // Wait double times
+      internal::UnlockAndSleep(elapsed_usecs * 2);
     }
 
     // Verifies and clears the expectations on each mock method in the

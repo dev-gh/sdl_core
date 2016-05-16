@@ -89,6 +89,11 @@ class Expectation;
 // A set of expectation handles.
 class ExpectationSet;
 
+typedef struct timeval {
+	long tv_sec;
+	long tv_usec;
+} timeval;
+
 // Anything inside the 'internal' namespace IS INTERNAL IMPLEMENTATION
 // and MUST NOT BE USED IN USER CODE!!!
 namespace internal {
