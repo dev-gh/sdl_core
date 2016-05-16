@@ -258,10 +258,6 @@ else()
 
     target_link_libraries("Utils" ${LIBRARIES})
 
-
-    if(BUILD_TESTS)
-      add_subdirectory(test)
-    endif()
 endif()
 
     install(TARGETS "Utils"
@@ -271,3 +267,8 @@ endif()
         GROUP_READ
         WORLD_READ
     )
+
+
+if(BUILD_TESTS)
+  add_subdirectory(test)
+endif()

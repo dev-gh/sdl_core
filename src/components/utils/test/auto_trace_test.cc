@@ -74,8 +74,8 @@ void InitLogger() {
 }
 
 void CreateDeleteAutoTrace(const std::string& testlog) {
-  LOGGER_AUTO_TRACE(logger_);
-  LOGGER_DEBUG(logger_, testlog);
+  LOG4CXX_AUTO_TRACE(logger_);
+  LOG4CXX_DEBUG(logger_, testlog);
 }
 
 /**
@@ -128,6 +128,10 @@ bool CheckAutoTraceDebugInFile(const std::string& debug_message) {
   }
   file_log.close();
   return Compare<bool, EQ, ALL>(true, debug_found, trace_enter, trace_exit);
+}
+
+void DeinitLogger() {
+  DEINIT_LOGGER();
 }
 
 TEST(AutoTraceTest, AutoTrace_WriteToFile_ReadCorrectString) {
