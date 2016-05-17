@@ -34,18 +34,10 @@
 #include <vector>
 
 #include "gmock/gmock.h"
-#include "utils/macro.h"
 #include "utils/make_shared.h"
-#include "application_manager/policies/policy_handler.h"
-#include "application_manager/test/include/application_manager/mock_application.h"
-//#include "application_manager/test/include/application_mock.h"
-#include "utils/custom_string.h"
 #include "policy/mock_policy_settings.h"
-#include "application_manager/policies/policy_handler.h"
-//#include "application_manager/mock_application_manager.h"
-#include "application_manager/event_engine/event_dispatcher.h"
-#include "application_manager/state_controller.h"
-#include "application_manager/resumption/resume_ctrl.h"
+#include "application_manager/mock_application.h"
+#include "application_manager/mock_application_manager.h"
 
 namespace application_manager {
 namespace test {
@@ -53,16 +45,16 @@ namespace test {
 namespace HmiLanguage = hmi_apis::Common_Language;
 namespace HmiResults = hmi_apis::Common_Result;
 namespace MobileResults = mobile_apis::Result;
+namespace application_manager_test = ::test::components::application_manager_test;
+namespace policy_handler_test = ::test::components::policy_handler_test;
 
-typedef ::test::components::resumption_test::MockApplication AppMock;
+typedef application_manager_test::MockApplication AppMock;
 typedef utils::SharedPtr<AppMock> MockApplicationSharedPtr;
 typedef std::vector<std::string> StringArray;
 typedef ::application_manager::Application App;
 typedef utils::SharedPtr<App> ApplicationSharedPtr;
 
 using testing::AtLeast;
-using testing::ReturnRefOfCopy;
-using testing::ReturnRef;
 using testing::Return;
 
 TEST(MessageHelperTestCreate,
@@ -94,7 +86,7 @@ TEST(MessageHelperTestCreate,
 }
 
 TEST(MessageHelperTestCreate, CreateSetAppIcon_SendNullPathImagetype_Equal) {
-  std::string path_to_icon = "";
+  std::string path_to_icon;
   uint32_t app_id = 0;
   smart_objects::SmartObjectSPtr ptr =
       MessageHelper::CreateSetAppIcon(path_to_icon, app_id);
@@ -133,7 +125,7 @@ TEST(MessageHelperTestCreate, CreateSetAppIcon_SendPathImagetype_Equal) {
 
 TEST(MessageHelperTestCreate,
      CreateGlobalPropertiesRequestsToHMI_SmartObject_EmptyList) {
-  MockApplicationSharedPtr appSharedMock = utils::MakeShared<MockApplication>();
+  MockApplicationSharedPtr appSharedMock = utils::MakeShared<AppMock>();
 
   EXPECT_CALL(*appSharedMock, vr_help_title()).Times(AtLeast(1));
   EXPECT_CALL(*appSharedMock, vr_help()).Times(AtLeast(1));
@@ -228,7 +220,7 @@ TEST(MessageHelperTestCreate, CreateShowRequestToHMI_SendSmartObject_Equal) {
 
 TEST(MessageHelperTestCreate,
      CreateAddCommandRequestToHMI_SendSmartObject_Empty) {
-  MockApplicationSharedPtr appSharedMock = utils::MakeShared<MockApplication>();
+  MockApplicationSharedPtr appSharedMock = utils::MakeShared<AppMock>();
   ::application_manager::CommandsMap vis;
   DataAccessor<application_manager::CommandsMap> data_accessor(vis, true);
 
