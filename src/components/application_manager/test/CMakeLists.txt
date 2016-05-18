@@ -33,10 +33,6 @@
 
 if (BUILD_TESTS)
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-  set(SQLITE_PATH "C:/SQL")
-endif()
-
 include_directories(
   include
     ${CMAKE_BINARY_DIR}/src/components/
@@ -211,7 +207,7 @@ file(COPY sdl_preloaded_pt.json DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY sdl_pt_update.json DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-  link_directories (${SQLITE_PATH})
+  link_directories ($ENV{SDL_SQLITE_DIR})
 endif()
 
 if(QT_PORT)
@@ -241,6 +237,10 @@ set(ResumptionData_SOURCES
 #    ${AM_TEST_DIR}/resumption/resume_ctrl_test.cc
     ${AM_TEST_DIR}/mock_message_helper.cc
   )
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj" )
+endif()  
 
   file(COPY hmi_capabilities.json DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
   file(COPY smartDeviceLink_test.ini DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

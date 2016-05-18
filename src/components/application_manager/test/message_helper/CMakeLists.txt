@@ -39,11 +39,14 @@ if(BUILD_TESTS)
     set(LIBRARIES
         gmock
         ApplicationManager
-        MessageHelper
         jsoncpp
         connectionHandler
         Utils
     )
+
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+      list(APPEND LIBRARIES MessageHelper)
+    endif()
 
     set(SOURCES
         message_helper_test.cc
@@ -54,9 +57,9 @@ if(BUILD_TESTS)
     endif()
 
     if(NOT QT_PORT AND ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-      link_directories(${CMAKE_SOURCE_DIR}/build/openssl_win_x64/lib/)
+      link_directories(${CMAKE_SOURCE_DIR}/build/openssl_win_x64/lib/)      
     endif()
-
+    
     create_test("message_helper_test" "${SOURCES}" "${LIBRARIES}")
-
-endif()
+ 
+ endif()

@@ -435,12 +435,14 @@ TEST(MessageHelperTestCreate, CreateNegativeResponse_SendSmartObject_Equal) {
 class MessageHelperTest : public ::testing::Test {
  public:
   MessageHelperTest()
-      : language_strings{"EN-US", "ES-MX", "FR-CA", "DE-DE", "ES-ES", "EN-GB",
+      : language_strings(StringArray
+                        {"EN-US", "ES-MX", "FR-CA", "DE-DE", "ES-ES", "EN-GB",
                          "RU-RU", "TR-TR", "PL-PL", "FR-FR", "IT-IT", "SV-SE",
                          "PT-PT", "NL-NL", "EN-AU", "ZH-CN", "ZH-TW", "JA-JP",
                          "AR-SA", "KO-KR", "PT-BR", "CS-CZ", "DA-DK", "NO-NO",
-                         "NL-BE", "EL-GR", "HU-HU", "FI-FI", "SK-SK"}
-      , hmi_result_strings{"SUCCESS",
+                         "NL-BE", "EL-GR", "HU-HU", "FI-FI", "SK-SK"})
+      , hmi_result_strings(StringArray
+                          {"SUCCESS",
                            "UNSUPPORTED_REQUEST",
                            "UNSUPPORTED_RESOURCE",
                            "DISALLOWED",
@@ -464,8 +466,9 @@ class MessageHelperTest : public ::testing::Test {
                            "WARNINGS",
                            "GENERIC_ERROR",
                            "USER_DISALLOWED",
-                           "TRUNCATED_DATA"}
-      , mobile_result_strings{"SUCCESS",
+                           "TRUNCATED_DATA"})
+      , mobile_result_strings(StringArray
+                             {"SUCCESS",
                               "UNSUPPORTED_REQUEST",
                               "UNSUPPORTED_RESOURCE",
                               "DISALLOWED",
@@ -497,8 +500,9 @@ class MessageHelperTest : public ::testing::Test {
                               "SAVED",
                               "INVALID_CERT",
                               "EXPIRED_CERT",
-                              "RESUME_FAILED"}
-      , function_id_strings{"RESERVED",
+                              "RESUME_FAILED"})
+      , function_id_strings(StringArray
+                           {"RESERVED",
                             "RegisterAppInterface",
                             "UnregisterAppInterface",
                             "SetGlobalProperties",
@@ -538,8 +542,9 @@ class MessageHelperTest : public ::testing::Test {
                             "DiagnosticMessage",
                             "SystemRequest",
                             "SendLocation",
-                            "DialNumber"}
-      , events_id_strings{"OnHMIStatus",
+                            "DialNumber"})
+      , events_id_strings(StringArray
+                        { "OnHMIStatus",
                           "OnAppInterfaceUnregistered",
                           "OnButtonEvent",
                           "OnButtonPress",
@@ -553,8 +558,8 @@ class MessageHelperTest : public ::testing::Test {
                           "OnKeyboardInput",
                           "OnTouchEvent",
                           "OnSystemRequest",
-                          "OnHashChange"}
-      , hmi_level_strings{"FULL", "LIMITED", "BACKGROUND", "NONE"}
+                          "OnHashChange"})
+      , hmi_level_strings(StringArray{"FULL", "LIMITED", "BACKGROUND", "NONE"})
       , delta_from_functions_id(32768) {}
 
  protected:
