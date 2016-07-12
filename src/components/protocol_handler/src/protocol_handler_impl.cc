@@ -49,6 +49,20 @@ namespace protocol_handler {
 
 CREATE_LOGGERPTR_GLOBAL(logger_, "ProtocolHandler")
 
+namespace {
+bool IsServiceDisallowedWithProtocol(const uint8_t protocol_version,
+                                     const ServiceType service_type) {
+  const bool is_disallowed =
+      PROTOCOL_VERSION_2 == protocol_version &&
+      (kAudio == service_type || kMobileNav == service_type);
+  if (is_disallowed) {
+    LOG4CXX_WARN(logger_,
+                 "Protocol version 2 doesn't support audio & video streaming");
+  }
+  return is_disallowed;
+}
+}  // namespace
+
 /**
  * Function return packet data as std::string.
  * If packet data is not printable return error message
@@ -229,6 +243,8 @@ void ProtocolHandlerImpl::SendStartSessionNAck(ConnectionID connection_id,
   raw_ford_messages_to_mobile_.PostMessage(
       impl::RawFordMessageToMobile(ptr, false));
 
+  LOG4CXX_DEBUG(
+      logger_, "protocol_version = " << static_cast<int32_t>(protocol_version));
   LOG4CXX_DEBUG(logger_,
                 "SendStartSessionNAck() for connection "
                     << connection_id << " for service_type "
@@ -1087,7 +1103,7 @@ RESULT_CODE ProtocolHandlerImpl::HandleControlMessageStartSession(
 
 #ifdef ENABLE_SECURITY
   const bool protection =
-      // Protocolo version 1 is not support protection
+      // Protocol version 1 does not support protection
       (protocol_version > PROTOCOL_VERSION_1) ? packet.protection_flag()
                                               : false;
 #else
@@ -1096,6 +1112,13 @@ RESULT_CODE ProtocolHandlerImpl::HandleControlMessageStartSession(
 
   uint32_t hash_id;
   const ConnectionID connection_id = packet.connection_id();
+  if (IsServiceDisallowedWithProtocol(protocol_version, service_type)) {
+    SendStartSessionNAck(connection_id,
+                         packet.session_id(),
+                         protocol_version,
+                         packet.service_type());
+    return RESULT_OK;
+  }
   const uint32_t session_id = session_observer_.OnSessionStartedCallback(
       connection_id, packet.session_id(), service_type, protection, &hash_id);
 
