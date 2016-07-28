@@ -37,6 +37,7 @@
 #include "connection_handler/connection_handler_impl.h"
 #include "protocol_handler/session_observer.h"
 #include "utils/byte_order.h"
+#include "utils/helpers.h"
 #include "protocol/common.h"
 
 #ifdef ENABLE_SECURITY
@@ -1014,29 +1015,38 @@ class StartSessionHandler : public security_manager::SecurityManagerListener {
     if (connection_key != connection_key_) {
       return false;
     }
-    const bool success =
+    const bool handshake_success =
         result == security_manager::SSLContext::Handshake_Result_Success;
-    // check current service protection
-    const bool was_service_protection_enabled =
+
+    // shows if service has been protected already
+    const bool service_protected =
         session_observer_.GetSSLContext(connection_key_, service_type_) != NULL;
-    if (was_service_protection_enabled) {
-      if (!success) {
-        protocol_handler_->SendStartSessionNAck(
-            connection_id_, session_id_, protocol_version_, service_type_);
-      } else {
-        // Could not be success handshake and not already protected service
+
+    bool start_session_result = false;
+    if (handshake_success) {
+      if (service_protected) {
+        // should not be success handshake on already protected service
         NOTREACHED();
+      } else {
+        session_observer_.SetProtectionFlag(connection_key_, service_type_);
+        start_session_result = true;
       }
     } else {
-      if (success) {
-        session_observer_.SetProtectionFlag(connection_key_, service_type_);
-      }
+      start_session_result =
+          !service_protected &&
+          !helpers::in_range(force_protected_service_, service_type_);
+    }
+
+    if (start_session_result) {
       protocol_handler_->SendStartSessionAck(connection_id_,
                                              session_id_,
                                              protocol_version_,
                                              hash_id_,
                                              service_type_,
-                                             success);
+                                             handshake_success);
+    } else {
+      protocol_handler_->SendStartSessionNAck(
+          connection_id_, session_id_, protocol_version_, service_type_);
     }
     delete this;
     return true;
