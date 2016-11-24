@@ -882,8 +882,6 @@ TEST_F(PolicyManagerImplTest2,
 
 TEST_F(PolicyManagerImplTest, LoadPT_SetInvalidUpdatePT_PTIsNotLoaded) {
   // Arrange
-  policy_manager_->ForcePTExchange();
-  policy_manager_->OnUpdateStarted();
   Json::Value table(Json::objectValue);
 
   policy_table::Table update(&table);
@@ -897,16 +895,12 @@ TEST_F(PolicyManagerImplTest, LoadPT_SetInvalidUpdatePT_PTIsNotLoaded) {
   ::policy::BinaryMessage msg(json.begin(), json.end());
 
   // Assert
-  EXPECT_CALL(*cache_manager_, GenerateSnapshot()).Times(0);
-  EXPECT_CALL(*cache_manager_, ApplyUpdate(_)).Times(0);
+  const std::string empty_certificate;
   EXPECT_CALL(listener_, GetAppName(_)).Times(0);
-  EXPECT_CALL(listener_, OnUpdateStatusChanged(_)).Times(1);
-  EXPECT_CALL(*cache_manager_, SaveUpdateRequired(false)).Times(0);
-  EXPECT_CALL(*cache_manager_, TimeoutResponse()).Times(0);
-  EXPECT_CALL(*cache_manager_, SecondsBetweenRetries(_)).Times(0);
+  EXPECT_CALL(listener_, OnUpdateStatusChanged(_));
+  EXPECT_CALL(listener_, OnCertificateUpdated(empty_certificate));
   EXPECT_FALSE(policy_manager_->LoadPT(kFilePtUpdateJson, msg));
-  EXPECT_CALL(*cache_manager_, IsPTPreloaded());
-  EXPECT_FALSE(policy_manager_->GetCache()->IsPTPreloaded());
+  EXPECT_FALSE(IsPTPreloaded());
 }
 
 TEST_F(

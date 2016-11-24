@@ -268,12 +268,18 @@ std::string PolicyManagerImpl::GetLockScreenIconUrl() const {
 bool PolicyManagerImpl::LoadPT(const std::string& file,
                                const BinaryMessage& pt_content) {
   LOG4CXX_INFO(logger_, "LoadPT of size " << pt_content.size());
+  LOG4CXX_DEBUG(
+      logger_,
+      "Content: " << std::string(pt_content.begin(), pt_content.end()));
+
+  const std::string empty_certificate;
 
   // Parse message into table struct
   utils::SharedPtr<policy_table::Table> pt_update = Parse(pt_content);
   if (!pt_update) {
     LOG4CXX_WARN(logger_, "Parsed table pointer is NULL.");
     update_status_manager_.OnWrongUpdateReceived();
+    listener_->OnCertificateUpdated(empty_certificate);
     return false;
   }
 
@@ -282,6 +288,7 @@ bool PolicyManagerImpl::LoadPT(const std::string& file,
   if (!IsPTValid(pt_update, policy_table::PT_UPDATE)) {
     wrong_ptu_update_received_ = true;
     update_status_manager_.OnWrongUpdateReceived();
+    listener_->OnCertificateUpdated(empty_certificate);
     return false;
   }
 
@@ -296,6 +303,7 @@ bool PolicyManagerImpl::LoadPT(const std::string& file,
         cache_->GenerateSnapshot();
     if (!policy_table_snapshot) {
       LOG4CXX_ERROR(logger_, "Failed to create snapshot of policy table");
+      listener_->OnCertificateUpdated(empty_certificate);
       return false;
     }
 

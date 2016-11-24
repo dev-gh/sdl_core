@@ -143,6 +143,11 @@ void PolicyManagerImpl::CheckTriggers() {
 bool PolicyManagerImpl::LoadPT(const std::string& file,
                                const BinaryMessage& pt_content) {
   LOG4CXX_INFO(logger_, "LoadPT of size " << pt_content.size());
+  LOG4CXX_DEBUG(
+      logger_,
+      "Content: " << std::string(pt_content.begin(), pt_content.end()));
+
+  const std::string empty_certificate;
 
 #ifdef USE_HMI_PTU_DECRYPTION
   // Assuemes Policy Table was parsed, formatted, and/or decrypted by
@@ -157,6 +162,7 @@ bool PolicyManagerImpl::LoadPT(const std::string& file,
   if (!pt_update) {
     LOG4CXX_WARN(logger_, "Parsed table pointer is 0.");
     update_status_manager_.OnWrongUpdateReceived();
+    listener_->OnCertificateUpdated(empty_certificate);
     return false;
   }
 
@@ -165,6 +171,7 @@ bool PolicyManagerImpl::LoadPT(const std::string& file,
   if (!IsPTValid(pt_update, policy_table::PT_UPDATE)) {
     wrong_ptu_update_received_ = true;
     update_status_manager_.OnWrongUpdateReceived();
+    listener_->OnCertificateUpdated(empty_certificate);
     return false;
   }
 
@@ -185,6 +192,7 @@ bool PolicyManagerImpl::LoadPT(const std::string& file,
         cache_->GenerateSnapshot();
     if (!policy_table_snapshot) {
       LOG4CXX_ERROR(logger_, "Failed to create snapshot of policy table");
+      listener_->OnCertificateUpdated(empty_certificate);
       return false;
     }
 
@@ -201,10 +209,8 @@ bool PolicyManagerImpl::LoadPT(const std::string& file,
       return false;
     }
 
-    if (pt_update->policy_table.module_config.certificate.is_initialized()) {
-      listener_->OnCertificateUpdated(
-          *(pt_update->policy_table.module_config.certificate));
-    }
+    listener_->OnCertificateUpdated(
+        *(pt_update->policy_table.module_config.certificate));
 
     std::map<std::string, StringArray> app_hmi_types;
     cache_->GetHMIAppTypeAfterUpdate(app_hmi_types);
