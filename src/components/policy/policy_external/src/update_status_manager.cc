@@ -171,7 +171,7 @@ bool UpdateStatusManager::IsUpdatePending() const {
 
 void UpdateStatusManager::ScheduleUpdate() {
   update_scheduled_ = true;
-  update_required_ = true;
+  set_update_required(true);
 }
 
 void UpdateStatusManager::ResetUpdateSchedule() {

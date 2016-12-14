@@ -132,6 +132,21 @@ TEST_F(
 }
 
 TEST_F(UpdateStatusManagerTest,
+       ScheduleUpdateAfterUpdateSucceeded_ExpectUpdateNeededSentToHMI) {
+  using ::testing::InSequence;
+  InSequence s;
+  EXPECT_CALL(*listener_, OnUpdateStatusChanged(update_needed_status_));
+  EXPECT_CALL(*listener_, OnUpdateStatusChanged(updating_status_));
+  EXPECT_CALL(*listener_, OnUpdateStatusChanged(up_to_date_status_));
+  EXPECT_CALL(*listener_, OnUpdateStatusChanged(update_needed_status_));
+
+  manager_->OnNewApplicationAdded(policy::kDeviceAllowed);
+  manager_->OnUpdateSentOut(k_timeout_);
+  manager_->OnValidUpdateReceived();
+  manager_->ScheduleUpdate();
+}
+
+TEST_F(UpdateStatusManagerTest,
        OnWrongUpdateReceived_SetWrongUpdateReceived_ExpectStatusUpdateNeeded) {
   // Arrange
   manager_->OnUpdateSentOut(k_timeout_);
