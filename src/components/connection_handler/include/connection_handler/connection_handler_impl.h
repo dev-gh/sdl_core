@@ -172,6 +172,22 @@ class ConnectionHandlerImpl
       const transport_manager::DisconnectDeviceError& error) OVERRIDE;
 
   /**
+   * \brief Check whether a service is allowed to be started
+   * \param connection_handle Connection identifier within which session has
+   * to be started.
+   * \param session_id Identifier of the session to be started
+   * \param service_type Type of service
+   * \param is_protected Would service be protected
+   * \return ServiceAllowed Is service allowed to start
+   */
+
+  protocol_handler::CreationStatus IsServiceAllowedToStart(
+      const transport_manager::ConnectionUID connection_handle,
+      const uint8_t session_id,
+      const protocol_handler::ServiceType& service_type,
+      const bool is_protected) OVERRIDE;
+
+  /**
    * \brief Callback function used by ProtocolHandler
    * when Mobile Application initiates start of new session.
    * \param connection_handle Connection identifier within which session has to

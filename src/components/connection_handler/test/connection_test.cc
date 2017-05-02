@@ -252,27 +252,31 @@ TEST_F(ConnectionTest, Session_AddInvalidService) {
                 EXPECT_SERVICE_NOT_EXISTS);
 }
 
-// RPC and Bulk Services could be only delay protected
-TEST_F(ConnectionTest, Session_AddRPCBulkServices) {
-  StartSession();
-  AddNewService(
-      kRpc, PROTECTION_OFF, EXPECT_RETURN_FALSE, EXPECT_SERVICE_EXISTS);
+//<<<<<<< HEAD
+//// RPC and Bulk Services could be only delay protected
+// TEST_F(ConnectionTest, Session_AddRPCBulkServices) {
+//  StartSession();
+//  AddNewService(
+//      kRpc, PROTECTION_OFF, EXPECT_RETURN_FALSE, EXPECT_SERVICE_EXISTS);
 
-  //  Bulk shall not be added and shall be PROTECTION_OFF
-  AddNewService(
-      kBulk, PROTECTION_OFF, EXPECT_RETURN_FALSE, EXPECT_SERVICE_EXISTS);
-#ifdef ENABLE_SECURITY
-  AddNewService(kRpc, PROTECTION_ON, EXPECT_RETURN_TRUE, EXPECT_SERVICE_EXISTS);
-#else
-  AddNewService(
-      kRpc, PROTECTION_ON, EXPECT_RETURN_FALSE, EXPECT_SERVICE_EXISTS);
-#endif  // ENABLE_SECURITY
+//  //  Bulk shall not be added and shall be PROTECTION_OFF
+//  AddNewService(
+//      kBulk, PROTECTION_OFF, EXPECT_RETURN_FALSE, EXPECT_SERVICE_EXISTS);
+//#ifdef ENABLE_SECURITY
+//  AddNewService(kRpc, PROTECTION_ON, EXPECT_RETURN_TRUE,
+//  EXPECT_SERVICE_EXISTS);
+//#else
+//  AddNewService(
+//      kRpc, PROTECTION_ON, EXPECT_RETURN_FALSE, EXPECT_SERVICE_EXISTS);
+//#endif  // ENABLE_SECURITY
 
-  //  Bulk shall not be added and shall be PROTECTION_ON
-  AddNewService(
-      kBulk, PROTECTION_ON, EXPECT_RETURN_FALSE, EXPECT_SERVICE_EXISTS);
-}
+//  //  Bulk shall not be added and shall be PROTECTION_ON
+//  AddNewService(
+//      kBulk, PROTECTION_ON, EXPECT_RETURN_FALSE, EXPECT_SERVICE_EXISTS);
+//}
 
+//=======
+//>>>>>>> ae24205... Enable starting of secure service if unsecured is started
 TEST_F(ConnectionTest, Session_AddAllOtherService_Unprotected) {
   StartSession();
   AddNewService(
@@ -332,11 +336,23 @@ TEST_F(ConnectionTest, Session_AddAllOtherService_DelayProtected1) {
       kMobileNav, PROTECTION_OFF, EXPECT_RETURN_TRUE, EXPECT_SERVICE_EXISTS);
 
 #ifdef ENABLE_SECURITY
-  AddNewService(
-      kAudio, PROTECTION_ON, EXPECT_RETURN_TRUE, EXPECT_SERVICE_EXISTS);
+  //<<<<<<< HEAD
+  //  AddNewService(
+  //      kAudio, PROTECTION_ON, EXPECT_RETURN_TRUE, EXPECT_SERVICE_EXISTS);
 
-  AddNewService(
-      kMobileNav, PROTECTION_ON, EXPECT_RETURN_TRUE, EXPECT_SERVICE_EXISTS);
+  //  AddNewService(
+  //      kMobileNav, PROTECTION_ON, EXPECT_RETURN_TRUE, EXPECT_SERVICE_EXISTS);
+  //=======
+  AddNewService(protocol_handler::kAudio,
+                PROTECTION_ON,
+                EXPECT_RETURN_TRUE,
+                EXPECT_SERVICE_EXISTS);
+
+  AddNewService(protocol_handler::kMobileNav,
+                PROTECTION_ON,
+                EXPECT_RETURN_TRUE,
+                EXPECT_SERVICE_EXISTS);
+//>>>>>>> ae24205... Enable starting of secure service if unsecured is started
 #else
   AddNewService(
       kAudio, PROTECTION_ON, EXPECT_RETURN_FALSE, EXPECT_SERVICE_EXISTS);
@@ -352,8 +368,15 @@ TEST_F(ConnectionTest, Session_AddAllOtherService_DelayProtected2) {
   AddNewService(
       kAudio, PROTECTION_OFF, EXPECT_RETURN_TRUE, EXPECT_SERVICE_EXISTS);
 #ifdef ENABLE_SECURITY
-  AddNewService(
-      kAudio, PROTECTION_ON, EXPECT_RETURN_TRUE, EXPECT_SERVICE_EXISTS);
+  //<<<<<<< HEAD
+  //  AddNewService(
+  //      kAudio, PROTECTION_ON, EXPECT_RETURN_TRUE, EXPECT_SERVICE_EXISTS);
+  //=======
+  AddNewService(protocol_handler::kAudio,
+                PROTECTION_ON,
+                EXPECT_RETURN_TRUE,
+                EXPECT_SERVICE_EXISTS);
+//>>>>>>> ae24205... Enable starting of secure service if unsecured is started
 #else
   AddNewService(
       kAudio, PROTECTION_ON, EXPECT_RETURN_FALSE, EXPECT_SERVICE_EXISTS);
@@ -362,8 +385,15 @@ TEST_F(ConnectionTest, Session_AddAllOtherService_DelayProtected2) {
   AddNewService(
       kMobileNav, PROTECTION_OFF, EXPECT_RETURN_TRUE, EXPECT_SERVICE_EXISTS);
 #ifdef ENABLE_SECURITY
-  AddNewService(
-      kMobileNav, PROTECTION_ON, EXPECT_RETURN_TRUE, EXPECT_SERVICE_EXISTS);
+  //<<<<<<< HEAD
+  //  AddNewService(
+  //      kMobileNav, PROTECTION_ON, EXPECT_RETURN_TRUE, EXPECT_SERVICE_EXISTS);
+  //=======
+  AddNewService(protocol_handler::kMobileNav,
+                PROTECTION_ON,
+                EXPECT_RETURN_TRUE,
+                EXPECT_SERVICE_EXISTS);
+//>>>>>>> ae24205... Enable starting of secure service if unsecured is started
 #else
   AddNewService(
       kMobileNav, PROTECTION_ON, EXPECT_RETURN_FALSE, EXPECT_SERVICE_EXISTS);

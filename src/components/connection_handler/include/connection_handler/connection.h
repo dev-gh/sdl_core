@@ -48,6 +48,11 @@ class SSLContext;
 }  // namespace security_manager
 #endif  // ENABLE_SECURITY
 
+namespace utils {
+template <typename T>
+class SharedPtr;
+}
+
 /**
  *@brief SmartDeviceLink connection_handler namespace.
  */
@@ -208,10 +213,18 @@ class Connection {
   void SetProtectionFlag(const uint8_t session_id,
                          const protocol_handler::ServiceType& service_type);
 #endif  // ENABLE_SECURITY
-        /**
-         * @brief Returns map of sessions which have been opened in
-         *  current connection.
-         */
+
+  /**
+   * @brief Find a session in the session map
+   * @param  session_id The session's id to be found
+   * @return  The session if is found, NULL otherwise
+   */
+  const utils::SharedPtr<Session> FindSession(uint8_t session_id) const;
+
+  /**
+   * @brief Returns map of sessions which have been opened in
+   *  current connection.
+   */
   const SessionMap session_map() const;
 
   /**

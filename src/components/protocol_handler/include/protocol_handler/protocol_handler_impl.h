@@ -467,6 +467,23 @@ class ProtocolHandlerImpl
 
 #ifdef ENABLE_SECURITY
   /**
+   * @brief ProcessEncryptedService allows to process request to opend encrypted
+   * service.
+   * @param session_id session identifier.
+   * @param connection_id the messages connection identifier.
+   * @param service_type service type i.e. rpc(0x7), audio(0x10), video(0x11).
+   * @param packet describes protocol packet - data, header etc.
+   * @param protect_existing is the service already started and this is just
+   * encrypting it
+   * @return processing result.
+   */
+  RESULT_CODE ProcessEncryptedService(const uint32_t session_id,
+                                      const ConnectionID connection_id,
+                                      const ServiceType service_type,
+                                      const ProtocolPacket& packet,
+                                      const bool protect_existing);
+
+  /**
    * \brief Encryption/Decryption methodes for SecureSecvice check
    * \param packet frame of message to encrypted/decrypted
    */

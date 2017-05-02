@@ -235,6 +235,12 @@ enum RESULT_CODE {
   RESULT_MALFORMED_OCCURS = 18,
   RESULT_UNKNOWN = 255
 };
+
+/**
+ *\enum ServiceAllowed
+ *\brief Is service allowed to be started
+ */
+enum CreationStatus { ALLOWED, DISALLOWED, ENCRYPT_EXISTING };
 }  // namespace protocol_handler
 
 #endif  // SRC_COMPONENTS_INCLUDE_PROTOCOL_COMMON_H_

@@ -53,6 +53,12 @@ class MockSessionObserver : public ::protocol_handler::SessionObserver {
                const protocol_handler::ServiceType& service_type,
                const bool is_protected,
                uint32_t* hash_id));
+  MOCK_METHOD4(IsServiceAllowedToStart,
+               protocol_handler::CreationStatus(
+                   const transport_manager::ConnectionUID connection_handle,
+                   const uint8_t session_id,
+                   const ::protocol_handler::ServiceType& service_type,
+                   const bool is_protected));
   MOCK_METHOD4(
       OnSessionEndedCallback,
       uint32_t(const transport_manager::ConnectionUID connection_handle,

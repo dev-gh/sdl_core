@@ -37,7 +37,9 @@
 #include <memory>
 
 #include "connection_handler/connection_handler_impl.h"
+#include "connection_handler/connection.h"
 #include "transport_manager/info.h"
+#include "utils/shared_ptr.h"
 
 #ifdef ENABLE_SECURITY
 #include "security_manager/security_manager.h"
@@ -279,6 +281,61 @@ bool AllowProtection(const ConnectionHandlerSettings& settings,
 }
 #endif  // ENABLE_SECURITY
 
+protocol_handler::CreationStatus ConnectionHandlerImpl::IsServiceAllowedToStart(
+    const transport_manager::ConnectionUID connection_handle,
+    const uint8_t session_id,
+    const protocol_handler::ServiceType& service_type,
+    const bool is_protected) {
+  LOG4CXX_AUTO_TRACE(logger_);
+#ifdef ENABLE_SECURITY
+  if (!AllowProtection(get_settings(), service_type, is_protected)) {
+    return protocol_handler::CreationStatus::DISALLOWED;
+  }
+#endif  // ENABLE_SECURITY
+
+  sync_primitives::AutoReadLock lock(connection_list_lock_);
+  ConnectionList::iterator it = connection_list_.find(connection_handle);
+  if (connection_list_.end() == it) {
+    LOG4CXX_ERROR(logger_, "Unknown connection!");
+    return protocol_handler::CreationStatus::DISALLOWED;
+  }
+  if ((0 == session_id) && (protocol_handler::kRpc == service_type)) {
+    return protocol_handler::CreationStatus::ALLOWED;
+  }
+  Connection* connection = it->second;
+  const utils::SharedPtr<Session> session = connection->FindSession(session_id);
+  if (session) {
+    const Service* service = session->FindService(service_type);
+    if (service) {
+#ifdef ENABLE_SECURITY
+      if (!is_protected) {
+        LOG4CXX_WARN(logger_,
+                     "Session " << static_cast<int>(session_id)
+                                << " already has unprotected service "
+                                << static_cast<int>(service_type));
+        return protocol_handler::CreationStatus::DISALLOWED;
+      }
+      if (service->is_protected_) {
+        LOG4CXX_WARN(logger_,
+                     "Session " << static_cast<int>(session_id)
+                                << " already has protected service "
+                                << static_cast<int>(service_type));
+        return protocol_handler::CreationStatus::DISALLOWED;
+      }
+
+      // For unprotected service we could start protection
+      return protocol_handler::CreationStatus::ENCRYPT_EXISTING;
+#else
+      // Service already exists
+      return protocol_handler::CreationStatus::DISALLOWED;
+#endif  // ENABLE_SECURITY
+    } else {
+      return protocol_handler::CreationStatus::ALLOWED;
+    }
+  }
+  return protocol_handler::CreationStatus::DISALLOWED;
+}
+
 uint32_t ConnectionHandlerImpl::OnSessionStartedCallback(
     const transport_manager::ConnectionUID connection_handle,
     const uint8_t session_id,
@@ -287,14 +344,6 @@ uint32_t ConnectionHandlerImpl::OnSessionStartedCallback(
     uint32_t* hash_id) {
   LOG4CXX_AUTO_TRACE(logger_);
 
-  if (hash_id) {
-    *hash_id = protocol_handler::HASH_ID_WRONG;
-  }
-#ifdef ENABLE_SECURITY
-  if (!AllowProtection(get_settings(), service_type, is_protected)) {
-    return 0;
-  }
-#endif  // ENABLE_SECURITY
   sync_primitives::AutoReadLock lock(connection_list_lock_);
   ConnectionList::iterator it = connection_list_.find(connection_handle);
   if (connection_list_.end() == it) {

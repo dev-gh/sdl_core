@@ -39,6 +39,8 @@
 #include "protocol_handler/protocol_packet.h"
 #include "utils/logger.h"
 #include "utils/macro.h"
+#include "utils/shared_ptr.h"
+#include "utils/make_shared.h"
 
 #ifdef ENABLE_SECURITY
 #include "security_manager/ssl_context.h"
@@ -156,32 +158,6 @@ bool Connection::AddNewService(uint8_t session_id,
     return false;
   }
   Session& session = session_it->second;
-  Service* service = session.FindService(service_type);
-  // if service already exists
-  if (service) {
-#ifdef ENABLE_SECURITY
-    if (!request_protection) {
-      LOG4CXX_WARN(logger_,
-                   "Session " << static_cast<int>(session_id)
-                              << " already has unprotected service "
-                              << static_cast<int>(service_type));
-      return false;
-    }
-    if (service->is_protected_) {
-      LOG4CXX_WARN(logger_,
-                   "Session " << static_cast<int>(session_id)
-                              << " already has protected service "
-                              << static_cast<int>(service_type));
-      return false;
-    }
-    // For unproteced service could be start protection
-    return true;
-#else
-    // Service already exists
-    return false;
-#endif  // ENABLE_SECURITY
-  }
-  // id service is not exists
   session.service_list.push_back(Service(service_type));
   return true;
 }
@@ -302,6 +278,17 @@ ConnectionHandle Connection::connection_handle() const {
 
 DeviceHandle Connection::connection_device_handle() const {
   return connection_device_handle_;
+}
+
+const utils::SharedPtr<Session> Connection::FindSession(
+    uint8_t session_id) const {
+  sync_primitives::AutoLock lock(session_map_lock_);
+  SessionMap::const_iterator session_it = session_map_.find(session_id);
+  if (session_it == session_map_.end()) {
+    LOG4CXX_WARN(logger_, "Session not found in this connection!");
+    return utils::SharedPtr<Session>();
+  }
+  return utils::MakeShared<Session>(session_it->second);
 }
 
 const SessionMap Connection::session_map() const {
