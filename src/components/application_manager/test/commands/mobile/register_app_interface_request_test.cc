@@ -420,7 +420,7 @@ TEST_F(RegisterAppInterfaceRequestTest,
 
   policy::StatusNotifier notify_upd_manager =
       utils::MakeShared<utils::CallNothing>();
-  ON_CALL(mock_policy_handler_, AddApplication(_))
+  ON_CALL(mock_policy_handler_, AddApplication(_,_))
       .WillByDefault(Return(notify_upd_manager));
 
   EXPECT_CALL(app_mngr_, RegisterApplication(msg_)).WillOnce(Return(mock_app));
