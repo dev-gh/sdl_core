@@ -3442,6 +3442,10 @@
       	If omitted, the value is set to true.
       </description>
     </param>
+    <param name="audioPassThruIcon" type="Image" mandatory="false">
+      <description>Image struct determinig wheter static or dynamic icon.
+        If omitted on supported displays, no (or the default if applicable) icon shall be displayed.</description>
+    </param>
   </function>
 
   <function name="PerformAudioPassThru" functionID="PerformAudioPassThruID" messagetype="response">

@@ -76,6 +76,7 @@ class GetWayPointsRequestTest
       : message_helper_mock_(*am::MockMessageHelper::message_helper_mock()) {
     Mock::VerifyAndClearExpectations(&message_helper_mock_);
   }
+
   ~GetWayPointsRequestTest() {
     Mock::VerifyAndClearExpectations(&message_helper_mock_);
   }
@@ -126,6 +127,9 @@ class GetWayPointsRequestOnEventTest
     }
 
     event.set_smart_object(*event_msg);
+
+    ON_CALL(message_helper_mock_, HMIToMobileResult(_))
+        .WillByDefault(Return(ResultCode));
 
     MessageSharedPtr result_msg(
         CatchMobileCommandResult(CallOnEvent(*command, event)));
@@ -205,6 +209,9 @@ TEST_F(GetWayPointsRequestTest,
 
   CallOnEvent caller(*command_sptr_, event);
 
+  ON_CALL(message_helper_mock_,
+          HMIToMobileResult(hmi_apis::Common_Result::SUCCESS))
+      .WillByDefault(Return(mobile_apis::Result::SUCCESS));
   MessageSharedPtr result_message = CatchMobileCommandResult(caller);
 
   const mobile_apis::Result::eType result =
