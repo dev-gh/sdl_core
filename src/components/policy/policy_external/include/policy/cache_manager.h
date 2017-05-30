@@ -892,6 +892,14 @@ class CacheManager : public CacheManagerInterface {
   sync_primitives::Lock backuper_locker_;
   BackgroundBackuper* backuper_;
   const PolicySettings* settings_;
+
+#ifdef BUILD_TESTS
+  friend class AccessRemoteImpl;
+  FRIEND_TEST(AccessRemoteImplTest, CheckModuleType);
+  FRIEND_TEST(AccessRemoteImplTest, EnableDisable);
+  FRIEND_TEST(AccessRemoteImplTest, GetGroups);
+  FRIEND_TEST(AccessRemoteImplTest, CheckParameters);
+#endif  // BUILD_TESTS
 };
 }  // namespace policy
 #endif  // SRC_COMPONENTS_POLICY_POLICY_EXTERNAL_INCLUDE_POLICY_CACHE_MANAGER_H_

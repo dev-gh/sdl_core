@@ -105,6 +105,7 @@ class AccessRemoteImpl : public AccessRemote {
   HMIList hmi_types_;
   SeatList seats_;
 
+#ifdef BUILD_TESTS
   friend struct Erase;
   friend struct IsTypeAccess;
 
@@ -123,6 +124,7 @@ class AccessRemoteImpl : public AccessRemote {
   FRIEND_TEST(AccessRemoteImplTest, GetGroups);
   FRIEND_TEST(AccessRemoteImplTest, CheckParameters);
   FRIEND_TEST(AccessRemoteImplTest, GetDeviceZone);
+#endif  // BUILD_TESTS
 };
 
 }  // namespace policy
