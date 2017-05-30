@@ -63,8 +63,9 @@
 #include "connection_handler/connection_handler.h"
 #include "connection_handler/connection_handler_observer.h"
 #include "connection_handler/device.h"
+#include "config_profile/profile.h"
 #include "formatters/CSmartFactory.h"
-#include "policies/policy_handler.h"
+#include "application_manager/policies/policy_handler_interface.h"
 
 #include "interfaces/HMI_API.h"
 #include "interfaces/HMI_API_schema.h"
@@ -233,6 +234,67 @@ class ApplicationManagerImpl
   DataAccessor<ApplicationSet> applications() const OVERRIDE;
   ApplicationSharedPtr application(uint32_t app_id) const OVERRIDE;
 
+#ifdef SDL_REMOTE_CONTROL
+  ApplicationSharedPtr application(
+      const std::string& device_id,
+      const std::string& policy_app_id) const OVERRIDE;
+  AppSharedPtrs applications_by_interior_vehicle_data(
+      smart_objects::SmartObject moduleDescription) OVERRIDE;
+  uint32_t GetDeviceHandle(uint32_t connection_key) OVERRIDE;
+  /**
+   * @brief ChangeAppsHMILevel the function that will change application's
+   * hmi level.
+   *
+   * @param app_id id of the application whose hmi level should be changed.
+   *
+   * @param level new hmi level for certain application.
+   */
+  void ChangeAppsHMILevel(uint32_t app_id, mobile_apis::HMILevel::eType level);
+  /**
+   * @brief MakeAppNotAudible allows to make certain application not audible.
+   *
+   * @param app_id applicatin's id whose audible state should be changed.
+   */
+  void MakeAppNotAudible(uint32_t app_id);
+
+  /**
+   * @brief MakeAppFullScreen allows ti change application's properties
+   * in order to make it full screen.
+   *
+   * @param app_id the id of application which should be in full screen  mode.
+   *
+   * @return true if operation was success, false otherwise.
+   */
+  bool MakeAppFullScreen(uint32_t app_id);
+
+  /**
+   * @brief Subscribes to notification from HMI
+   * @param hmi_notification string with notification name
+   */
+  void SubscribeToHMINotification(const std::string& hmi_notification) OVERRIDE;
+
+  /**
+   * @brief Checks HMI level and returns true if audio streaming is allowed
+   */
+  bool IsAudioStreamingAllowed(uint32_t connection_key) const OVERRIDE;
+
+  /**
+   * @brief Checks HMI level and returns true if video streaming is allowed
+   */
+  bool IsVideoStreamingAllowed(uint32_t connection_key) const OVERRIDE;
+  void Erase(ApplicationSharedPtr app_to_remove) {
+    app_to_remove->RemoveExtensions();
+    applications_.erase(app_to_remove);
+  }
+  virtual functional_modules::PluginManager& GetPluginManager() OVERRIDE {
+    return plugin_manager_;
+  }
+  std::vector<std::string> devices(
+      const std::string& policy_app_id) const OVERRIDE;
+  virtual void SendPostMessageToMobile(const MessagePtr& message) OVERRIDE;
+  virtual void SendPostMessageToHMI(const MessagePtr& message) OVERRIDE;
+#endif
+
   ApplicationSharedPtr active_application() const OVERRIDE;
 
   ApplicationSharedPtr application_by_hmi_app(
@@ -240,10 +302,8 @@ class ApplicationManagerImpl
   ApplicationSharedPtr application_by_policy_id(
       const std::string& policy_app_id) const OVERRIDE;
 
-  std::vector<ApplicationSharedPtr> applications_by_button(
-      uint32_t button) OVERRIDE;
-  std::vector<ApplicationSharedPtr> applications_with_navi() OVERRIDE;
-
+  AppSharedPtrs applications_by_button(uint32_t button) OVERRIDE;
+  AppSharedPtrs applications_with_navi() OVERRIDE;
   ApplicationSharedPtr get_limited_media_application() const OVERRIDE;
   ApplicationSharedPtr get_limited_navi_application() const OVERRIDE;
   ApplicationSharedPtr get_limited_voice_application() const OVERRIDE;
@@ -308,8 +368,8 @@ class ApplicationManagerImpl
    * @param vehicle_info Enum value of type of vehicle data
    * @param new value (for integer values currently) of vehicle data
    */
-  std::vector<ApplicationSharedPtr> IviInfoUpdated(VehicleDataType vehicle_info,
-                                                   int value) OVERRIDE;
+  AppSharedPtrs IviInfoUpdated(VehicleDataType vehicle_info,
+                               int value) OVERRIDE;
 
   void OnApplicationRegistered(ApplicationSharedPtr app) OVERRIDE;
 
@@ -961,7 +1021,7 @@ class ApplicationManagerImpl
    * @param name of the app folder(make + mobile app id)
    * @return free app space.
    */
-  uint32_t GetAvailableSpaceForApp(const std::string& folder_name);
+  uint32_t GetAvailableSpaceForApp(const std::string& folder_name) OVERRIDE;
 
   /*
    * @brief returns true if HMI is cooperating
@@ -972,7 +1032,7 @@ class ApplicationManagerImpl
    * @brief Method used to send default app tts globalProperties
    * in case they were not provided from mobile side after defined time
    */
-  void OnTimerSendTTSGlobalProperties();
+  void OnTimerSendTTSGlobalProperties() OVERRIDE;
 
   /**
    * @brief method adds application
@@ -1017,15 +1077,15 @@ class ApplicationManagerImpl
     return *policy_handler_;
   }
 
-  /*
+  /**
    * @brief Function Should be called when Low Voltage is occured
    */
-  void OnLowVoltage();
+  void OnLowVoltage() OVERRIDE;
 
-  /*
+  /**
    * @brief Function Should be called when WakeUp occures after Low Voltage
    */
-  void OnWakeUp();
+  void OnWakeUp() OVERRIDE;
 
   /**
    * @brief IsApplicationForbidden allows to distinguish if application is
@@ -1149,6 +1209,12 @@ class ApplicationManagerImpl
   bool IsStopping() const OVERRIDE {
     return is_stopping_;
   }
+
+  /**
+   * @brief Clear all applications' persistent data in app_storage and
+   * AppIconsFolder
+   */
+  void ClearUserStorage();
 
   StateController& state_controller() OVERRIDE;
   const ApplicationManagerSettings& get_settings() const OVERRIDE;
@@ -1313,7 +1379,8 @@ class ApplicationManagerImpl
   void CloseNaviApp();
 
   /**
-   * @brief Suspends streaming ability of application in case application's HMI
+   * @brief Suspends streaming ability of application in case application's
+   * HMI
    * level
    * has been changed to not allowed for streaming
    */
@@ -1398,6 +1465,10 @@ class ApplicationManagerImpl
   void ClearTTSGlobalPropertiesList();
 
  private:
+#ifdef ENABLE_LOG
+  static log4cxx::LoggerPtr logger_;
+#endif  // ENABLE_LOG
+
   const ApplicationManagerSettings& settings_;
   /**
    * @brief List of applications
@@ -1444,6 +1515,27 @@ class ApplicationManagerImpl
   protocol_handler::ProtocolHandler* protocol_handler_;
   request_controller::RequestController request_ctrl_;
 
+#ifdef SDL_REMOTE_CONTROL
+  functional_modules::PluginManager plugin_manager_;
+  /**
+   * @brief Map contains apps with HMI state before incoming call
+   * After incoming call ends previous HMI state must restore
+   *
+   */
+  struct AppState {
+    AppState(const mobile_apis::HMILevel::eType& level,
+             const mobile_apis::AudioStreamingState::eType& streaming_state,
+             const mobile_apis::SystemContext::eType& context)
+        : hmi_level(level)
+        , audio_streaming_state(streaming_state)
+        , system_context(context) {}
+
+    mobile_apis::HMILevel::eType hmi_level;
+    mobile_apis::AudioStreamingState::eType audio_streaming_state;
+    mobile_apis::SystemContext::eType system_context;
+  };
+#endif
+
   hmi_apis::HMI_API* hmi_so_factory_;
   mobile_apis::MOBILE_API* mobile_so_factory_;
 
@@ -1469,7 +1561,8 @@ class ApplicationManagerImpl
 
   /**
    * @brief Resume controler is responcible for save and load information
-   * about persistent application data on disk, and save session ID for resuming
+   * about persistent application data on disk, and save session ID for
+   * resuming
    * application in case INGITION_OFF or MASTER_RESSET
    */
   std::auto_ptr<resumption::ResumeCtrl> resume_ctrl_;

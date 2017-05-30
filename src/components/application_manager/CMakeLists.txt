@@ -38,6 +38,7 @@ set (AM_MOCK_DIR ${AM_TEST_DIR}/mock)
 include_directories (
   include/
   ${COMPONENTS_DIR}
+  ${COMPONENTS_DIR}/functional_module/include/
   ${COMPONENTS_DIR}/utils/include/
   ${COMPONENTS_DIR}/formatters/include/
   ${COMPONENTS_DIR}/protocol_handler/include/
@@ -53,6 +54,7 @@ include_directories (
   ${POLICY_PATH}/include/
   ${POLICY_GLOBAL_INCLUDE_PATH}/
   ${CMAKE_BINARY_DIR}/src/components/
+  ${POLICY_INCLUDE_PATH}/
   ${JSONCPP_INCLUDE_DIRECTORY}
   ${ENCRYPTION_INCLUDE_DIRECTORY}
   ${MESSAGE_BROKER_INCLUDE_DIRECTORY}
@@ -389,9 +391,15 @@ set(PATHS
 )
 collect_sources(SOURCES "${PATHS}" "${EXCLUDE_PATHS}")
 
+if (NOT REMOTE_CONTROL)    
+    list(REMOVE_ITEM SOURCES
+        ${COMPONENTS_DIR}/application_manager/src/core_service.cc)
+endif()
+
 set(LIBRARIES
   HMI_API
   MOBILE_API
+  jsoncpp
   v4_protocol_v1_2_no_extra
   ProtocolLibrary
   SmartObjects
@@ -401,6 +409,14 @@ set(LIBRARIES
   dbms
   Utils
 )
+
+
+if(REMOTE_CONTROL)
+    SET (LIBRARIES
+      ${LIBRARIES}
+      FunctionalModule
+    )
+endif(REMOTE_CONTROL)
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
   list(APPEND LIBRARIES sqlite3)

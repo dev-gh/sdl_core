@@ -1,5 +1,5 @@
 /*
- Copyright (c) 2016, Ford Motor Company
+ Copyright (c) 2017, Ford Motor Company
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without
@@ -69,7 +69,6 @@ extern const char* success;
 extern const char* sync_msg_version;
 extern const char* major_version;
 extern const char* minor_version;
-extern const char* patch_version;
 extern const char* app_name;
 extern const char* ngn_media_screen_app_name;
 extern const char* vr_synonyms;
@@ -169,6 +168,7 @@ extern const char* audio_pass_thru_capabilities;
 extern const char* pcm_stream_capabilities;
 extern const char* audio_pass_thru_icon;
 extern const char* way_points;
+extern const char* device_rank;
 
 // PutFile
 extern const char* sync_file_name;
@@ -313,7 +313,6 @@ extern const char* is_suscribed;
 extern const char* message_data;
 
 extern const char* delivery_mode;
-
 extern const char* audio_streaming_indicator;
 
 // keys for default parameters loaded from hmi_capabilities.json:
@@ -467,6 +466,7 @@ extern const char* policyfile;
 extern const char* is_active;
 extern const char* is_deactivated;
 extern const char* event_name;
+
 }  // namespace hmi_notification
 
 }  // namespace application_manager
