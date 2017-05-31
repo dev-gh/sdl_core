@@ -68,6 +68,7 @@ void UIGetCapabilitiesResponse::Run() {
     hmi_capabilities.set_audio_pass_thru_capabilities(
         msg_params[strings::audio_pass_thru_capabilities]);
   }
+
   if (msg_params.keyExists(strings::hmi_capabilities)) {
     hmi_capabilities.set_ui_hmi_capabilities(
         msg_params[strings::hmi_capabilities]);

@@ -238,6 +238,7 @@ bool AlertManeuverRequest::IsWhiteSpaceExist() {
       }
     }
   }
+
   return false;
 }
 

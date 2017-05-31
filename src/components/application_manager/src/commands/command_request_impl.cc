@@ -251,6 +251,7 @@ void CommandRequestImpl::SendResponse(
     LOG4CXX_ERROR(logger_, "Memory allocation failed.");
     return;
   }
+
   smart_objects::SmartObject& response = *result;
 
   response[strings::params][strings::message_type] = MessageType::kResponse;
@@ -542,7 +543,6 @@ bool CommandRequestImpl::CheckAllowedParameters() {
                       << connection_key() << "'");
     return false;
   }
-
   RPCParams params;
 
   const smart_objects::SmartObject& s_map = (*message_)[strings::msg_params];
@@ -586,7 +586,6 @@ bool CommandRequestImpl::CheckAllowedParameters() {
   }
 
   RemoveDisallowedParameters();
-
   return true;
 }
 

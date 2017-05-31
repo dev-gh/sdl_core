@@ -177,7 +177,6 @@ void Message::set_binary_data(BinaryData* data) {
   if (binary_data_) {
     delete binary_data_;
   }
-
   binary_data_ = data;
 }
 

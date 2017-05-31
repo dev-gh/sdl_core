@@ -137,6 +137,7 @@ const char* audio_pass_thru_capabilities = "audioPassThruCapabilities";
 const char* pcm_stream_capabilities = "pcmStreamCapabilities";
 const char* audio_pass_thru_icon = "audioPassThruIcon";
 const char* way_points = "wayPoints";
+const char* device_rank = "deviceRank";
 
 // PutFile
 const char* sync_file_name = "syncFileName";
@@ -281,9 +282,7 @@ const char* is_suscribed = "isSubscribed";
 const char* message_data = "messageData";
 
 const char* delivery_mode = "deliveryMode";
-
 const char* audio_streaming_indicator = "audioStreamingIndicator";
-
 const char* const keyboard_properties_supported = "keyboardPropertiesSupported";
 const char* const language_supported = "languageSupported";
 const char* const keyboard_layout_supported = "keyboardLayoutSupported";

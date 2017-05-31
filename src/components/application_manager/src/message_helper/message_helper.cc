@@ -454,6 +454,19 @@ mobile_apis::HMILevel::eType MessageHelper::StringToHMILevel(
   return mobile_apis::HMILevel::INVALID_ENUM;
 }
 
+#ifdef SDL_REMOTE_CONTROL
+mobile_apis::DeviceRank::eType MessageHelper::StringToDeviceRank(
+    const std::string& device_rank) {
+  using namespace NsSmartDeviceLink::NsSmartObjects;
+  mobile_apis::DeviceRank::eType value;
+  if (EnumConversionHelper<mobile_apis::DeviceRank::eType>::StringToEnum(
+          device_rank, &value)) {
+    return value;
+  }
+  return mobile_apis::DeviceRank::INVALID_ENUM;
+}
+#endif  // SDL_REMOTE_CONTROL
+
 std::string MessageHelper::StringifiedHMILevel(
     const mobile_apis::HMILevel::eType hmi_level) {
   using namespace NsSmartDeviceLink::NsSmartObjects;

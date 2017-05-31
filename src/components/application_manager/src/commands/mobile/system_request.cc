@@ -117,7 +117,6 @@ class QueryAppsDataValidator {
 
     smart_objects::SmartArray::iterator applications_iterator =
         objects_array->begin();
-
     for (; applications_iterator != objects_array->end();
          ++applications_iterator) {
       const smart_objects::SmartObject& app_data = *applications_iterator;
@@ -181,6 +180,7 @@ class QueryAppsDataValidator {
                          << "'languages' doesn't exist");
         return false;
       }
+
       if (!ValidateLanguages(app_data[os_type][json::languages],
                              synonyms_map)) {
         return false;
@@ -520,7 +520,6 @@ void SystemRequest::Run() {
     if (!file || !file->is_download_complete ||
         !file_system::MoveFile(app_full_file_path, file_dst_path)) {
       LOG4CXX_DEBUG(logger_, "Binary data not found.");
-
       std::string origin_file_name;
       if ((*message_)[strings::msg_params].keyExists(strings::file_name)) {
         origin_file_name =

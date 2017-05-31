@@ -223,6 +223,7 @@ void GetUrls::ProcessPolicyServiceURLs(const policy::EndpointUrls& endpoints) {
   SendResponseToHMI(Common_Result::SUCCESS);
   return;
 }
+
 #endif  // PROPRIETARY_MODE
 
 }  // namespace commands
