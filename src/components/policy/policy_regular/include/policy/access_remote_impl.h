@@ -45,6 +45,11 @@ namespace policy {
 
 class AccessRemoteImpl : public AccessRemote {
  public:
+  typedef std::map<Subject, TypeAccess> AccessControlRow;
+  typedef std::map<Object, AccessControlRow> AccessControlList;
+  typedef std::map<Subject, policy_table::AppHMITypes> HMIList;
+  typedef std::map<std::string, SeatLocation> SeatList;
+
   AccessRemoteImpl();
   explicit AccessRemoteImpl(utils::SharedPtr<CacheManager> cache);
 
@@ -82,10 +87,6 @@ class AccessRemoteImpl : public AccessRemote {
                               std::vector<std::string>* modules);
 
  private:
-  typedef std::map<Subject, TypeAccess> AccessControlRow;
-  typedef std::map<Object, AccessControlRow> AccessControlList;
-  typedef std::map<Subject, policy_table::AppHMITypes> HMIList;
-  typedef std::map<std::string, SeatLocation> SeatList;
   inline void set_enabled(bool value);
   inline bool country_consent() const;
   const policy_table::AppHMITypes& HmiTypes(const Subject& who);
@@ -105,6 +106,7 @@ class AccessRemoteImpl : public AccessRemote {
   HMIList hmi_types_;
   SeatList seats_;
 
+#ifdef BUILD_TESTS
   friend struct Erase;
   friend struct IsTypeAccess;
 
@@ -123,6 +125,7 @@ class AccessRemoteImpl : public AccessRemote {
   FRIEND_TEST(AccessRemoteImplTest, GetGroups);
   FRIEND_TEST(AccessRemoteImplTest, CheckParameters);
   FRIEND_TEST(AccessRemoteImplTest, GetDeviceZone);
+#endif  // BUILD_TESTS
 };
 
 }  // namespace policy
