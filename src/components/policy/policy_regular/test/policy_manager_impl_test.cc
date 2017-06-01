@@ -54,7 +54,9 @@
 #include "utils/date_time.h"
 #include "utils/make_shared.h"
 #include "utils/gen_hash.h"
-
+#ifdef SDL_REMOTE_CONTROL
+#include "policy/mock_access_remote.h"
+#endif  // SDL_REMOTE_CONTROL
 using ::testing::ReturnRef;
 using ::testing::DoAll;
 using ::testing::SetArgReferee;
@@ -63,9 +65,6 @@ using ::testing::_;
 using ::testing::SetArgReferee;
 using ::testing::AtLeast;
 using ::testing::Return;
-
-using ::policy::MockPolicyListener;
-using ::policy::MockUpdateStatusManager;
 
 using ::policy::PolicyManagerImpl;
 using ::policy::PolicyTable;
@@ -148,12 +147,20 @@ class PolicyManagerImplTest : public ::testing::Test {
   MockCacheManagerInterface* cache_manager;
   NiceMock<MockPolicyListener> listener;
   const std::string device_id;
+#ifdef SDL_REMOTE_CONTROL
+  utils::SharedPtr<access_remote_test::MockAccessRemote> access_remote;
+#endif  // SDL_REMOTE_CONTROL
 
   void SetUp() OVERRIDE {
     manager = new PolicyManagerImpl();
     manager->set_listener(&listener);
     cache_manager = new MockCacheManagerInterface();
     manager->set_cache_manager(cache_manager);
+
+#ifdef SDL_REMOTE_CONTROL
+    access_remote = new access_remote_test::MockAccessRemote();
+    manager->set_access_remote(access_remote);
+#endif  // SDL_REMOTE_CONTROL
   }
 
   void TearDown() OVERRIDE {
@@ -169,6 +176,15 @@ class PolicyManagerImplTest : public ::testing::Test {
       return ::testing::AssertionFailure() << ::rpc::PrettyFormat(report);
     }
   }
+
+#ifdef SDL_REMOTE_CONTROL
+ public:
+  bool CheckPTURemoteCtrlChange(
+      const utils::SharedPtr<policy_table::Table> pt_update,
+      const utils::SharedPtr<policy_table::Table> snapshot) {
+    return manager->CheckPTURemoteCtrlChange(pt_update, snapshot);
+  }
+#endif  // SDL_REMOTE_CONTROL
 };
 
 class PolicyManagerImplTest2 : public ::testing::Test {
@@ -1267,7 +1283,7 @@ TEST_F(PolicyManagerImplTest2,
   // Arrange
   CreateLocalPT("sdl_preloaded_pt.json");
   GetPTU("valid_sdl_pt_update.json");
-  utils::SharedPtr<policy_table::Table> pt = (manager->GetCache())->GetPT();
+  utils::SharedPtr<policy_table::Table> pt = (manager->GetCache())->pt();
   policy_table::ModuleConfig& module_config = pt->policy_table.module_config;
   ::policy::VehicleInfo vehicle_info = manager->GetVehicleInfo();
 
@@ -1348,7 +1364,7 @@ TEST_F(
     HertBeatTimeout_AddApp_UpdateAppPolicies_ExpectReceivedHertBeatTimeoutCorrect) {
   // Arrange
   CreateLocalPT("sdl_preloaded_pt.json");
-  utils::SharedPtr<policy_table::Table> pt = (manager->GetCache())->GetPT();
+  utils::SharedPtr<policy_table::Table> pt = (manager->GetCache())->pt();
   ::policy_table::PolicyTableType type1 =
       ::policy_table::PolicyTableType::PT_PRELOADED;
   pt->SetPolicyTableType(type1);

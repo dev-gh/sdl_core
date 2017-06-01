@@ -497,7 +497,7 @@ class PolicyHandler : public PolicyHandlerInterface,
    * registration process
    * @param device_id unique identifier of device
    * @param application_id The policy aplication id.
-   * @param app_types list of hmi types
+   * @param hmi_types list of hmi types
    * @return function that will notify update manager about new application
    */
   StatusNotifier AddApplication(
@@ -670,15 +670,11 @@ class PolicyHandler : public PolicyHandlerInterface,
   void UpdateHMILevel(application_manager::ApplicationSharedPtr app,
                       mobile_apis::HMILevel::eType level);
 #endif  // SDL_REMOTE_CONTROL
-        /**
-         * @brief Sets days after epoch on successful policy update
-         */
-  void SetDaysAfterEpoch();
 
   /**
-   * @brief Link all currently registered applications
+   * @brief Sets days after epoch on successful policy update
    */
-  void LinkAppsToDevice();
+  void SetDaysAfterEpoch();
 
   typedef std::vector<application_manager::ApplicationSharedPtr> Applications;
 

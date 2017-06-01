@@ -256,6 +256,16 @@ class PolicyHandlerTest : public ::testing::Test {
     group_permission.group_name = group_name;
   }
 
+  application_manager::SeatLocation FillApplicationManagerSeatLocation(
+      const int col = 1,
+      const int row = 1,
+      const int level = 1,
+      const int colspan = 1,
+      const int rowspan = 1,
+      const int levelspan = 1) {
+    return {col, row, level, colspan, rowspan, levelspan};
+  }
+
   policy_table::AppHmiTypes HmiTypes(const policy_table::AppHMIType hmi_type) {
     policy_table::AppHmiTypes hmi_types;
     hmi_types.push_back(hmi_type);
