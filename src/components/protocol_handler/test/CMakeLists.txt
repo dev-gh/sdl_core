@@ -41,7 +41,7 @@ include_directories (
   ${GMOCK_INCLUDE_DIRECTORY}
 )
 
-collect_sources(SOURCES ${CMAKE_CURRENT_SOURCE_DIR} protocol_handler_tm_test.cc)
+collect_sources(SOURCES ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(LIBRARIES
   gmock

@@ -234,7 +234,7 @@ bool CryptoManagerImpl::OnCertificateUpdated(const std::string& data) {
 }
 
 SSLContext* CryptoManagerImpl::CreateSSLContext() {
-  if (NULL == context_ || IsCertificateUpdateRequired()) {
+  if (context_ == NULL) {
     return NULL;
   }
 
@@ -316,7 +316,7 @@ bool CryptoManagerImpl::set_certificate(const std::string& cert_data) {
   BIO* bio_cert = BIO_new_mem_buf(
       const_cast<std::string::pointer>(cert_data.data()), cert_data.length());
   if (NULL == bio_cert) {
-    LOG4CXX_WARN(logger_, "Could not update certificate, BIO not created");
+    LOG4CXX_WARN(logger_, "Unable to update certificate. BIO not created");
     return false;
   }
 
@@ -334,40 +334,32 @@ bool CryptoManagerImpl::set_certificate(const std::string& cert_data) {
     return false;
   }
 
-  X509* cert = NULL;
-  PEM_read_bio_X509(bio_cert, &cert, 0, 0);
-
   EVP_PKEY* pkey = NULL;
-  if (1 == BIO_reset(bio_cert)) {
-    PEM_read_bio_PrivateKey(bio_cert, &pkey, 0, 0);
-  } else {
-    LOG4CXX_WARN(logger_, "Could not reset BIO to read key: " << LastError());
-  }
+  X509* cert = NULL;
+  PKCS12_parse(p12, NULL, &pkey, &cert, NULL);
 
   if (NULL == cert || NULL == pkey) {
-    LOG4CXX_WARN(logger_,
-                 "Either certificate or key are not valid: " << LastError());
+    LOG4CXX_WARN(logger_, "Either certificate or key not valid.");
     return false;
   }
 
   if (!SSL_CTX_use_certificate(context_, cert)) {
-    LOG4CXX_WARN(logger_, "Could not use certificate: " << LastError());
+    LOG4CXX_WARN(logger_, "Could not use certificate");
     return false;
   }
 
   asn1_time_to_tm(X509_get_notAfter(cert));
 
   if (!SSL_CTX_use_PrivateKey(context_, pkey)) {
-    LOG4CXX_ERROR(logger_, "Could not use key: " << LastError());
+    LOG4CXX_ERROR(logger_, "Could not use key");
     return false;
   }
   if (!SSL_CTX_check_private_key(context_)) {
-    LOG4CXX_ERROR(logger_, "Could not check key: " << LastError());
+    LOG4CXX_ERROR(logger_, "Could not use certificate ");
     return false;
   }
 
-  LOG4CXX_DEBUG(logger_, "Certificate and key successfully updated");
-
+  LOG4CXX_DEBUG(logger_, "Certificate and key data successfully updated");
   return true;
 }
 
