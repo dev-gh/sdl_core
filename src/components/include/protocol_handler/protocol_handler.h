@@ -34,7 +34,6 @@
 
 #include "protocol/common.h"
 #include "protocol_handler/protocol_handler_settings.h"
-#include "application_manager/policies/policy_handler_observer.h"
 
 /**
  *\namespace protocol_handlerHandler
@@ -49,7 +48,7 @@ class SessionObserver;
  * \brief Interface for component parsing protocol header
  * on the messages between SDL and mobile application.
  */
-class ProtocolHandler : public policy::PolicyHandlerObserver {
+class ProtocolHandler {
  public:
   /**
    * \brief Adds pointer to higher layer handler for message exchange
@@ -108,25 +107,6 @@ class ProtocolHandler : public policy::PolicyHandlerObserver {
    */
   virtual const ProtocolHandlerSettings& get_settings() const = 0;
   virtual SessionObserver& get_session_observer() = 0;
-
-  virtual void OnUpdateHMIAppType(
-      std::map<std::string, std::vector<std::string> > app_hmi_types) = 0;
-
-  /**
-   * @brief OnCertificateUpdated the callback which signals if certificate field
-   * has been updated during PTU
-   *
-   * @param certificate_data the value of the updated field.
-   */
-  virtual bool OnCertificateUpdated(const std::string& certificate_data) = 0;
-
-  /**
-   * @brief OnPTUFinishedd the callback which signals PTU has finished
-   *
-   * @param ptu_result the result from the PTU - true if successful,
-   * otherwise false.
-   */
-  virtual void OnPTUFinished(const bool ptu_status) = 0;
 
  protected:
   /**

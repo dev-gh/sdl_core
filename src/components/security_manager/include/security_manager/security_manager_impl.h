@@ -165,7 +165,6 @@ class SecurityManagerImpl : public SecurityManager,
    * @return Session name in config file
    */
   static const char* ConfigSection();
-  bool IsCertificateUpdateRequired() const;
 
  private:
   /**
