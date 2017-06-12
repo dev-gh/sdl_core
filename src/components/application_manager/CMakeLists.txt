@@ -48,6 +48,7 @@ include_directories (
   ${COMPONENTS_DIR}/config_profile/include
   ${COMPONENTS_DIR}/request_watchdog/include
   ${COMPONENTS_DIR}/resumption/include
+  ${COMPONENTS_DIR}/system_time/include
   ${COMPONENTS_DIR}/rpc_base/include
   ${COMPONENTS_DIR}/interfaces
   ${POLICY_PATH}/include/

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Ford Motor Company
+ * Copyright (c) 2016, Ford Motor Company
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -41,6 +41,7 @@
 #include "protocol_handler/session_observer.h"
 
 #include "security_manager/security_manager_listener.h"
+#include "application_manager/policies/policy_handler_observer.h"
 
 namespace security_manager {
 
@@ -50,14 +51,15 @@ class CryptoManager;
  * protocol_handler::ProtocolObserver
  * and provide interface for handling Security queries from mobile side
  */
-class SecurityManager : public protocol_handler::ProtocolObserver {
+class SecurityManager : public protocol_handler::ProtocolObserver,
+                        public policy::PolicyHandlerObserver {
  public:
   /**
    * \brief InternalErrors is 1 byte identifier of internal error
    * Handle as binary data in Ford Protocol
    */
   enum InternalErrors {
-    ERROR_SUCCESS = 0x00,
+    ERROR_SUCCESS = 0x00,             // Internal SecuirtyManger value
     ERROR_INVALID_QUERY_SIZE = 0x01,  // wrong size of query data
     ERROR_INVALID_QUERY_ID = 0x02,    // unknown query id
     ERROR_NOT_SUPPORTED = 0x03,       // SDL does not support encryption
@@ -66,7 +68,9 @@ class SecurityManager : public protocol_handler::ProtocolObserver {
     // for not protected service
     ERROR_DECRYPTION_FAILED = 0x06,
     ERROR_ENCRYPTION_FAILED = 0x07,
-    ERROR_SSL_INVALID_DATA = 0x08,
+    ERROR_HANDSHAKE_INVALID_CERT = 0x08,
+    ERROR_HANDSHAKE_EXPIRED_CERT = 0x09,
+    ERROR_HANDSHAKE_FAILED = 0x10,  // In case of all other handshake errors
     ERROR_INTERNAL = 0xFF,
     ERROR_UNKNOWN_INTERNAL_ERROR = 0xFE  // error value for testing
   };
@@ -132,6 +136,17 @@ class SecurityManager : public protocol_handler::ProtocolObserver {
    */
   virtual void AddListener(SecurityManagerListener* const listener) = 0;
   virtual void RemoveListener(SecurityManagerListener* const listener) = 0;
+  /**
+   * @brief OnCertificateUpdated allows to obtain notification when certificate
+   * has been updated with policy table update. Pass this certificate to crypto
+   * manager for further processing. Also process postopnes handshake for the
+   * certain connection key.
+   *
+   * @param data the certificates content.
+   *
+   * @return always true.
+   */
+  virtual bool OnCertificateUpdated(const std::string& data) = 0;
 };
 }  // namespace security_manager
 #endif  // SRC_COMPONENTS_INCLUDE_SECURITY_MANAGER_SECURITY_MANAGER_H_

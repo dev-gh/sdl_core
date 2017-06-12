@@ -20,23 +20,22 @@ class CryptoManagerSettingsImpl : public CryptoManagerSettings {
   Protocol security_manager_protocol_name() const OVERRIDE {
     CREATE_LOGGERPTR_LOCAL(logger_, "SecurityManager")
 
+    security_manager::Protocol protocol = security_manager::UNKNOWN;
     const std::string& protocol_str = profile_.security_manager_protocol_name();
-    if (protocol_str == "TLSv1.0") {
-      return security_manager::TLSv1;
+    if (profile_.security_manager_protocol_name() == "TLSv1.0") {
+      protocol = security_manager::TLSv1;
+    } else if (protocol_str == "TLSv1.1") {
+      protocol = security_manager::TLSv1_1;
+    } else if (protocol_str == "TLSv1.2") {
+      protocol = security_manager::TLSv1_2;
+    } else if (protocol_str == "SSLv3") {
+      protocol = security_manager::SSLv3;
+    } else {
+      LOG4CXX_ERROR(
+          logger_,
+          "Unknown protocol: " << profile_.security_manager_protocol_name());
     }
-    if (protocol_str == "TLSv1.1") {
-      return security_manager::TLSv1_1;
-    }
-    if (protocol_str == "TLSv1.2") {
-      return security_manager::TLSv1_2;
-    }
-    if (protocol_str == "SSLv3") {
-      return security_manager::SSLv3;
-    }
-    LOG4CXX_ERROR(
-        logger_,
-        "Unknown protocol: " << profile_.security_manager_protocol_name());
-    return static_cast<security_manager::Protocol>(-1);
+    return protocol;
   }
   bool verify_peer() const OVERRIDE {
     return profile_.verify_peer();

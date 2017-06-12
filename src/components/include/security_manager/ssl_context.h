@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Ford Motor Company
+ * Copyright (c) 2016, Ford Motor Company
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -69,22 +69,27 @@ class SSLContext {
     Handshake_Result_Success,
     Handshake_Result_Fail,
     Handshake_Result_AbnormalFail,
+    Handshake_Result_CertInvalid,
     Handshake_Result_CertExpired,
     Handshake_Result_NotYetValid,
     Handshake_Result_CertNotSigned,
     Handshake_Result_AppIDMismatch,
-    Handshake_Result_AppNameMismatch,
+    Handshake_Result_AppNameMismatch
   };
 
   struct HandshakeContext {
-    HandshakeContext() : expected_sn(""), expected_cn("") {}
-
-    HandshakeContext(const custom_str::CustomString& exp_sn,
-                     const custom_str::CustomString& exp_cn)
-        : expected_sn(exp_sn), expected_cn(exp_cn) {}
-
     custom_str::CustomString expected_sn;
     custom_str::CustomString expected_cn;
+    time_t system_time;
+
+    HandshakeContext& make_context(const custom_str::CustomString& sn,
+                                   const custom_str::CustomString& cn,
+                                   time_t sys_time = time(NULL)) {
+      expected_sn = sn;
+      expected_cn = cn;
+      system_time = sys_time;
+      return *this;
+    }
   };
 
   virtual HandshakeResult StartHandshake(const uint8_t** const out_data,
@@ -103,6 +108,8 @@ class SSLContext {
                        size_t* out_data_size) = 0;
   virtual bool IsInitCompleted() const = 0;
   virtual bool IsHandshakePending() const = 0;
+  virtual bool GetCertificateDueDate(time_t& due_date) const = 0;
+  virtual bool HasCertificate() const = 0;
   virtual size_t get_max_block_size(size_t mtu) const = 0;
   virtual std::string LastError() const = 0;
 

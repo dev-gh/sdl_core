@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Ford Motor Company
+ * Copyright (c) 2016, Ford Motor Company
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,7 +34,9 @@
 #define SRC_COMPONENTS_SECURITY_MANAGER_INCLUDE_SECURITY_MANAGER_SECURITY_MANAGER_IMPL_H_
 
 #include <list>
+#include <vector>
 #include <string>
+#include <memory>
 
 #include "utils/macro.h"
 #include "utils/message_queue.h"
@@ -44,8 +46,10 @@
 #include "security_manager/security_query.h"
 #include "protocol_handler/protocol_handler.h"
 #include "protocol/common.h"
+#include "utils/system_time_handler.h"
 
 namespace security_manager {
+class CryptoManager;
 /**
  * \brief SecurityMessage is wrapper for SecurityQuery with priority
  * \brief SecurityMessageQueue and SecurityMessageLoop are support typedefs
@@ -67,12 +71,16 @@ typedef threads::MessageLoopThread<SecurityMessageQueue> SecurityMessageLoop;
  * \brief SecurityManagerImpl class implements SecurityManager interface
  */
 class SecurityManagerImpl : public SecurityManager,
-                            public SecurityMessageLoop::Handler {
+                            public SecurityMessageLoop::Handler,
+                            public utils::SystemTimeListener {
  public:
   /**
    * \brief Constructor
+   * \param system_time_handler allows to work with system time.
    */
-  SecurityManagerImpl();
+  explicit SecurityManagerImpl(utils::SystemTimeHandler* system_time_handler);
+
+  ~SecurityManagerImpl();
   /**
    * \brief Add received from Mobile Application message
    * Overriden ProtocolObserver::OnMessageReceived method
@@ -145,6 +153,7 @@ class SecurityManagerImpl : public SecurityManager,
    */
   void AddListener(SecurityManagerListener* const listener) OVERRIDE;
   void RemoveListener(SecurityManagerListener* const listener) OVERRIDE;
+  bool OnCertificateUpdated(const std::string& data) OVERRIDE;
   /**
    * \brief Notifiers for listeners
    * \param connection_key Unique key used by other components as session
@@ -166,6 +175,11 @@ class SecurityManagerImpl : public SecurityManager,
    */
   static const char* ConfigSection();
 
+#ifdef BUILD_TESTS
+  const SecurityMessageLoop& get_security_messages_queue() const {
+    return security_messages_;
+  }
+#endif
  private:
   /**
    * \brief Sends Handshake binary data to mobile application
@@ -198,6 +212,60 @@ class SecurityManagerImpl : public SecurityManager,
    * identifier
    */
   void SendQuery(const SecurityQuery& query, const uint32_t connection_key);
+  /**
+    * \brief Convert SDL internal handshake
+    * errors to InternalErrors codes
+    * \param HandshakeResult code
+    * \return InternalErrors code
+    */
+  const InternalErrors convert_handshake_result_to_internal_errors(
+      const SSLContext::HandshakeResult error) const;
+
+  /**
+   * @brief PostponeHandshake allows to postpone handshake. It notifies
+   * cryptomanager that certificate should be updated and adds specified
+   * connection key to the list of the certificate awaiting connections.
+   * @param connection_key the identifier for connection to postpone handshake.
+   */
+  void PostponeHandshake(uint32_t connection_key);
+
+  /**
+   * @brief ResumeHandshake allows to resume handshake after certificate has
+   * been updated.
+   * @param connection_key the connection identifier to start handshake.
+   */
+  void ResumeHandshake(uint32_t connection_key);
+
+  /**
+   * @brief ProceedHandshake starts the handshake process.
+   * @param ssl_context ssl context for the handshake. COntains certificate,
+   * keys, etc.
+   * @param connection_key the connection identifier to process handshake.
+   */
+  void ProceedHandshake(SSLContext* ssl_context, uint32_t connection_key);
+
+  void CheckCertificateDates();
+
+  /**
+   * @brief OnSystemTimeArrived method which notifies
+   * crypto manager with updated time in order to check certificate validity
+   * @param utc_time the current system time.
+   */
+  void OnSystemTimeArrived(const time_t utc_time) OVERRIDE;
+
+  /**
+   * @brief OnSystemTimeFails currently does nothing.
+   * The method has to somehow process timeout case for the
+   * GetSystemTimeRequest.
+   */
+  void OnSystemTimeFails() OVERRIDE;
+
+  /**
+   * @brief ResumePendingHandshake allowsto process the connection
+   * lists after apropriate event has occured.
+   * These events are: SystemTime arrived or certificate updated.
+   */
+  void ResumePendingHandshake();
 
   // Thread that pumps handshake data
   SecurityMessageLoop security_messages_;
@@ -218,6 +286,13 @@ class SecurityManagerImpl : public SecurityManager,
    *\brief List of listeners for notify handshake done result
    */
   std::list<SecurityManagerListener*> listeners_;
+  std::auto_ptr<utils::SystemTimeHandler> system_time_handler_;
+  sync_primitives::Lock connections_lock_;
+  std::vector<uint32_t> awaiting_certificate_connections_;
+
+  sync_primitives::Lock waiters_lock_;
+  volatile bool waiting_for_certificate_;
+  volatile bool waiting_for_time_;
   DISALLOW_COPY_AND_ASSIGN(SecurityManagerImpl);
 };
 }  // namespace security_manager

@@ -29,26 +29,31 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef SRC_COMPONENTS_INCLUDE_SECURITY_MANAGER_SECURITY_MANAGER_LISTENER_H_
-#define SRC_COMPONENTS_INCLUDE_SECURITY_MANAGER_SECURITY_MANAGER_LISTENER_H_
-namespace security_manager {
 
-class SecurityManagerListener {
- public:
-  /**
-   * \brief Notification about protection result
-   * \param connection_key Unique key used by other components as session
-   * identifier
-   * \param success result of connection protection
-   * \return \c true on success notification or \c false otherwise
-   */
-  virtual bool OnHandshakeDone(uint32_t connection_key,
-                               SSLContext::HandshakeResult result) = 0;
-  /**
-   * @brief Notify listeners that certificate update is required.
-   */
-  virtual void OnCertificateUpdateRequired() = 0;
-  virtual ~SecurityManagerListener() {}
-};
-}  // namespace security_manager
-#endif  // SRC_COMPONENTS_INCLUDE_SECURITY_MANAGER_SECURITY_MANAGER_LISTENER_H_
+#include "utils/system_time_handler.h"
+#include <algorithm>
+
+namespace utils {
+
+SystemTimeHandler::SystemTimeHandler() {}
+
+SystemTimeHandler::~SystemTimeHandler() {}
+
+void SystemTimeHandler::QuerySystemTime() {
+  DoSystemTimeQuery();
+}
+
+void SystemTimeHandler::SubscribeOnSystemTime(SystemTimeListener* listener) {
+  DoSubscribe(listener);
+}
+
+void SystemTimeHandler::UnSubscribeFromSystemTime(
+    SystemTimeListener* listener) {
+  DoUnsubscribe(listener);
+}
+
+time_t SystemTimeHandler::GetUTCTime() {
+  return FetchSystemTime();
+}
+
+}  // namespace utils

@@ -35,6 +35,7 @@
 #include "utils/make_shared.h"
 #include "config_profile/profile.h"
 #include "resumption/last_state_impl.h"
+#include "application_manager/system_time/system_time_handler_impl.h"
 
 #ifdef ENABLE_SECURITY
 #include "security_manager/security_manager_impl.h"
@@ -162,7 +163,9 @@ bool LifeCycle::StartComponents() {
   }
 
 #ifdef ENABLE_SECURITY
-  security_manager_ = new security_manager::SecurityManagerImpl();
+  utils::SystemTimeHandler* handler =
+      new application_manager::SystemTimeHandlerImpl(*app_manager_);
+  security_manager_ = new security_manager::SecurityManagerImpl(handler);
   crypto_manager_ = new security_manager::CryptoManagerImpl(
       utils::MakeShared<security_manager::CryptoManagerSettingsImpl>(
           profile_, app_manager_->GetPolicyHandler().RetrieveCertificate()));
@@ -174,7 +177,7 @@ bool LifeCycle::StartComponents() {
   security_manager_->set_crypto_manager(crypto_manager_);
   security_manager_->AddListener(app_manager_);
 
-  app_manager_->AddPolicyObserver(crypto_manager_);
+  app_manager_->AddPolicyObserver(security_manager_);
   if (!crypto_manager_->Init()) {
     LOG4CXX_ERROR(logger_, "CryptoManager initialization fail.");
     return false;

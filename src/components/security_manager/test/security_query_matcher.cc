@@ -30,9 +30,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <gmock/gmock.h>
 #include <string>
-
-#include "gmock/gmock.h"
 #include "utils/byte_order.h"
 #include "security_manager/security_query.h"
 

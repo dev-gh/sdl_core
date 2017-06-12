@@ -42,11 +42,10 @@ include_directories(
 collect_sources(SOURCES "${CMAKE_CURRENT_SOURCE_DIR}")
 
 set(LIBRARIES
-  gmock
+  googletest
   ${SecurityManagerLibrary}
+  ConfigProfile
 )
-
-create_test (security_manager_test "${SOURCES}" "${LIBRARIES}")
 
 set(CERT_LIST 
   ${CMAKE_SOURCE_DIR}/mycert.pem
@@ -63,4 +62,5 @@ foreach(CERT_ENTRY ${CERT_LIST})
   file(COPY ${CERT_ENTRY} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 endforeach()
 
+create_test(security_manager_test "${SOURCES}" "${LIBRARIES}")
 add_dependencies(security_manager_test generate_certificates)

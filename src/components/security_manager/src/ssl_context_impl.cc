@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Ford Motor Company
+ * Copyright (c) 2016, Ford Motor Company
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -60,11 +60,17 @@ CryptoManagerImpl::SSLContextImpl::SSLContextImpl(SSL* conn,
 }
 
 std::string CryptoManagerImpl::SSLContextImpl::LastError() const {
-  if (!IsInitCompleted()) {
-    return std::string("Initialization is not completed");
+  if (last_error_.empty()) {
+    const char* reason = ERR_reason_error_string(ERR_get_error());
+    if (reason) {
+      last_error_ = std::string(reason ? reason : "");
+    } else {
+      if (!IsInitCompleted()) {
+        last_error_ = "Initialization is not completed";
+      }
+    }
   }
-  const char* reason = ERR_reason_error_string(ERR_get_error());
-  return std::string(reason ? reason : "");
+  return last_error_;
 }
 
 bool CryptoManagerImpl::SSLContextImpl::IsInitCompleted() const {
@@ -80,33 +86,39 @@ SSLContext::HandshakeResult CryptoManagerImpl::SSLContextImpl::StartHandshake(
 
 namespace {
 size_t aes128_gcm_sha256_max_block_size(size_t mtu) {
-  if (mtu < 29)
+  if (mtu < 29) {
     return 0;
+  }
   return mtu - 29;
 }
 size_t rc4_md5_max_block_size(size_t mtu) {
-  if (mtu < 21)
+  if (mtu < 21) {
     return 0;
+  }
   return mtu - 21;
 }
 size_t rc4_sha_max_block_size(size_t mtu) {
-  if (mtu < 25)
+  if (mtu < 25) {
     return 0;
+  }
   return mtu - 25;
 }
 size_t seed_sha_max_block_size(size_t mtu) {
-  if (mtu < 53)
+  if (mtu < 53) {
     return 0;
+  }
   return ((mtu - 37) & 0xfffffff0) - 5;
 }
 size_t aes128_sha256_max_block_size(size_t mtu) {
-  if (mtu < 69)
+  if (mtu < 69) {
     return 0;
+  }
   return ((mtu - 53) & 0xfffffff0) - 1;
 }
 size_t des_cbc3_sha_max_block_size(size_t mtu) {
-  if (mtu < 37)
+  if (mtu < 37) {
     return 0;
+  }
   return ((mtu - 29) & 0xfffffff8) - 5;
 }
 }  // namespace
@@ -153,6 +165,10 @@ void CryptoManagerImpl::SSLContextImpl::PrintCertData(
       OPENSSL_free(issuer);
     }
 
+    const std::string& cn = GetTextBy(subj_name, NID_commonName);
+    const std::string& sn = GetTextBy(subj_name, NID_serialNumber);
+
+    LOG4CXX_DEBUG(logger_, "CN: " << cn << ". SERIALNUMBER: " << sn);
     ASN1_TIME* notBefore = X509_get_notBefore(cert);
     ASN1_TIME* notAfter = X509_get_notAfter(cert);
 
@@ -184,20 +200,41 @@ CryptoManagerImpl::SSLContextImpl::CheckCertContext() {
     return CLIENT == mode_ ? Handshake_Result_Fail : Handshake_Result_Success;
   }
 
-  X509_NAME* subj_name = X509_get_subject_name(cert);
+  ASN1_TIME* notBefore = X509_get_notBefore(cert);
+  ASN1_TIME* notAfter = X509_get_notAfter(cert);
 
-  const std::string& cn = GetTextBy(subj_name, NID_commonName);
-  const std::string& sn = GetTextBy(subj_name, NID_serialNumber);
+  time_t start = asn1_time_to_tm(notBefore);
+  time_t end = asn1_time_to_tm(notAfter);
 
-  if (!(hsh_context_.expected_cn.CompareIgnoreCase(cn.c_str()))) {
+  const double start_seconds = difftime(hsh_context_.system_time, start);
+  const double end_seconds = difftime(end, hsh_context_.system_time);
+
+  if (start_seconds < 0) {
     LOG4CXX_ERROR(logger_,
-                  "Trying to run handshake with wrong app name: "
-                      << cn << ". Expected app name: "
-                      << hsh_context_.expected_cn.AsMBString());
-    return Handshake_Result_AppNameMismatch;
+                  "Certificate is not yet valid. Time before validity "
+                      << start_seconds << " seconds");
+    return Handshake_Result_NotYetValid;
+  } else {
+    LOG4CXX_DEBUG(logger_,
+                  "Time since certificate validity " << start_seconds
+                                                     << "seconds");
   }
 
-  if (!(hsh_context_.expected_sn.CompareIgnoreCase(sn.c_str()))) {
+  if (end_seconds < 0) {
+    LOG4CXX_ERROR(logger_,
+                  "Certificate already expired. Time after expiration "
+                      << end_seconds << " seconds");
+    return Handshake_Result_CertExpired;
+  } else {
+    LOG4CXX_DEBUG(logger_,
+                  "Time until expiration " << end_seconds << "seconds");
+  }
+
+  X509_NAME* subj_name = X509_get_subject_name(cert);
+
+  const std::string& sn = GetTextBy(subj_name, NID_serialNumber);
+
+  if (!hsh_context_.expected_sn.CompareIgnoreCase(sn.c_str())) {
     LOG4CXX_ERROR(logger_,
                   "Trying to run handshake with wrong app id: "
                       << sn << ". Expected app id: "
@@ -236,11 +273,13 @@ bool CryptoManagerImpl::SSLContextImpl::WriteHandshakeData(
     const uint8_t* const in_data, size_t in_data_size) {
   LOG4CXX_AUTO_TRACE(logger_);
   if (in_data && in_data_size) {
+    LOG4CXX_DEBUG(logger_, "Handling " << in_data_size << " bytes");
     const int ret = BIO_write(bioIn_, in_data, in_data_size);
     if (ret <= 0) {
+      LOG4CXX_WARN(logger_, "BIO write fail");
       is_handshake_pending_ = false;
       ResetConnection();
-      return Handshake_Result_AbnormalFail;
+      return false;
     }
   }
   return true;
@@ -249,6 +288,7 @@ bool CryptoManagerImpl::SSLContextImpl::WriteHandshakeData(
 SSLContext::HandshakeResult
 CryptoManagerImpl::SSLContextImpl::PerformHandshake() {
   const int handshake_result = SSL_do_handshake(connection_);
+  LOG4CXX_TRACE(logger_, "Do handshake result is " << handshake_result);
   if (handshake_result == 1) {
     const HandshakeResult result = CheckCertContext();
     if (result != Handshake_Result_Success) {
@@ -267,7 +307,12 @@ CryptoManagerImpl::SSLContextImpl::PerformHandshake() {
     is_handshake_pending_ = false;
 
   } else if (handshake_result == 0) {
-    SSL_clear(connection_);
+    const int error = SSL_get_error(connection_, handshake_result);
+    SetHandshakeError(error);
+    LOG4CXX_WARN(logger_,
+                 "Handshake failed on the other side with error "
+                     << error << " \"" << LastError() << '"');
+    ResetConnection();
     is_handshake_pending_ = false;
     return Handshake_Result_Fail;
   } else {
@@ -281,12 +326,6 @@ CryptoManagerImpl::SSLContextImpl::PerformHandshake() {
                        << LastError() << '"');
       ResetConnection();
       is_handshake_pending_ = false;
-
-      // In case error happened but ssl verification shows OK
-      // method will return AbnormalFail.
-      if (X509_V_OK == error) {
-        return Handshake_Result_AbnormalFail;
-      }
       return openssl_error_convert_to_internal(error);
     }
   }
@@ -299,20 +338,18 @@ SSLContext::HandshakeResult CryptoManagerImpl::SSLContextImpl::DoHandshakeStep(
     const uint8_t** const out_data,
     size_t* out_data_size) {
   LOG4CXX_AUTO_TRACE(logger_);
-  DCHECK(out_data);
-  DCHECK(out_data_size);
+  DCHECK_OR_RETURN(out_data, Handshake_Result_Fail);
+  DCHECK_OR_RETURN(out_data_size, Handshake_Result_Fail);
   *out_data = NULL;
   *out_data_size = 0;
 
   // TODO(Ezamakhov): add test - hanshake fail -> restart StartHandshake
-  {
-    sync_primitives::AutoLock locker(bio_locker);
+  sync_primitives::AutoLock locker(bio_locker);
 
-    if (SSL_is_init_finished(connection_)) {
-      LOG4CXX_DEBUG(logger_, "SSL initilization is finished");
-      is_handshake_pending_ = false;
-      return Handshake_Result_Success;
-    }
+  if (SSL_is_init_finished(connection_)) {
+    LOG4CXX_DEBUG(logger_, "SSL initilization is finished");
+    is_handshake_pending_ = false;
+    return Handshake_Result_Success;
   }
 
   if (!WriteHandshakeData(in_data, in_data_size)) {
@@ -356,6 +393,7 @@ bool CryptoManagerImpl::SSLContextImpl::Encrypt(const uint8_t* const in_data,
   *out_data_size = read_size;
   *out_data = buffer_;
 
+  LOG4CXX_INFO(logger_, "Encrypted " << in_data_size << " bytes");
   return true;
 }
 
@@ -380,6 +418,9 @@ bool CryptoManagerImpl::SSLContextImpl::Decrypt(const uint8_t* const in_data,
     EnsureBufferSizeEnough(len + offset);
     len = BIO_read(bioFilter_, buffer_ + offset, len);
     // TODO(EZamakhov): investigate BIO_read return 0, -1 and -2 meanings
+    // Cases of len according to OpenSSL documentation
+    // 0 and -1: no data was successfully read or written
+    // -2 : The operation is not implemented in the specific BIO type
     if (len <= 0) {
       // Reset filter and connection deinitilization instead
       BIO_ctrl(bioFilter_, BIO_CTRL_RESET, 0, NULL);
@@ -390,6 +431,7 @@ bool CryptoManagerImpl::SSLContextImpl::Decrypt(const uint8_t* const in_data,
     len = BIO_ctrl_pending(bioFilter_);
   }
   *out_data = buffer_;
+  LOG4CXX_DEBUG(logger_, "Decrypted " << in_data_size << " bytes");
   return true;
 }
 
@@ -407,6 +449,24 @@ bool CryptoManagerImpl::SSLContextImpl::IsHandshakePending() const {
   return is_handshake_pending_;
 }
 
+bool CryptoManagerImpl::SSLContextImpl::GetCertificateDueDate(
+    time_t& due_date) const {
+  LOG4CXX_AUTO_TRACE(logger_);
+
+  X509* cert = SSL_get_certificate(connection_);
+  if (!cert) {
+    LOG4CXX_DEBUG(logger_, "Get certificate failed.");
+    return false;
+  }
+
+  due_date = asn1_time_to_tm(X509_get_notAfter(cert));
+
+  return true;
+}
+
+bool CryptoManagerImpl::SSLContextImpl::HasCertificate() const {
+  return SSL_get_certificate(connection_) != NULL;
+}
 CryptoManagerImpl::SSLContextImpl::~SSLContextImpl() {
   SSL_shutdown(connection_);
   SSL_free(connection_);
@@ -461,6 +521,9 @@ void CryptoManagerImpl::SSLContextImpl::EnsureBufferSizeEnough(size_t size) {
     buffer_ = new (std::nothrow) uint8_t[size];
     if (buffer_) {
       buffer_size_ = size;
+    } else {
+      buffer_ = NULL;
+      buffer_size_ = 0;
     }
   }
 }
@@ -469,6 +532,10 @@ SSLContext::HandshakeResult
 CryptoManagerImpl::SSLContextImpl::openssl_error_convert_to_internal(
     const long error) {
   switch (error) {
+    // In case error happened but ssl verification shows OK
+    // method will return AbnormalFail.
+    case X509_V_OK:
+      return Handshake_Result_AbnormalFail;
     case X509_V_ERR_CERT_HAS_EXPIRED:
       return Handshake_Result_CertExpired;
     case X509_V_ERR_CERT_NOT_YET_VALID:
@@ -478,6 +545,9 @@ CryptoManagerImpl::SSLContextImpl::openssl_error_convert_to_internal(
     case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT:
     case X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT:
       return Handshake_Result_CertNotSigned;
+    case X509_V_ERR_INVALID_CA:
+    case X509_V_ERR_INVALID_NON_CA:
+      return Handshake_Result_CertInvalid;
     default:
       return Handshake_Result_Fail;
   }
@@ -501,6 +571,56 @@ std::string CryptoManagerImpl::SSLContextImpl::GetTextBy(X509_NAME* name,
 
   std::transform(str.begin(), str.end(), str.begin(), ::tolower);
   return str;
+}
+
+int CryptoManagerImpl::SSLContextImpl::pull_number_from_buf(char* buf,
+                                                            int* idx) const {
+  if (!idx) {
+    return 0;
+  }
+  const int val = ((buf[*idx] - '0') * 10) + buf[(*idx) + 1] - '0';
+  *idx = *idx + 2;
+  return val;
+}
+
+time_t CryptoManagerImpl::SSLContextImpl::asn1_time_to_tm(
+    ASN1_TIME* time) const {
+  struct tm cert_time;
+  memset(&cert_time, 0, sizeof(struct tm));
+  // the minimum value for day of month is 1, otherwise exception will be thrown
+  cert_time.tm_mday = 1;
+  char* buf = (char*)time->data;
+  int index = 0;
+  const int year = pull_number_from_buf(buf, &index);
+  if (V_ASN1_GENERALIZEDTIME == time->type) {
+    cert_time.tm_year = (year * 100 - 1900) + pull_number_from_buf(buf, &index);
+  } else {
+    cert_time.tm_year = year < 50 ? year + 100 : year;
+  }
+
+  const int mon = pull_number_from_buf(buf, &index);
+  const int day = pull_number_from_buf(buf, &index);
+  const int hour = pull_number_from_buf(buf, &index);
+  const int mn = pull_number_from_buf(buf, &index);
+
+  cert_time.tm_mon = mon - 1;
+  cert_time.tm_mday = day;
+  cert_time.tm_hour = hour;
+  cert_time.tm_min = mn;
+
+  if (buf[index] == 'Z') {
+    cert_time.tm_sec = 0;
+  }
+  if ((buf[index] == '+') || (buf[index] == '-')) {
+    const int mn = pull_number_from_buf(buf, &index);
+    const int mn1 = pull_number_from_buf(buf, &index);
+    cert_time.tm_sec = (mn * 3600) + (mn1 * 60);
+  } else {
+    const int sec = pull_number_from_buf(buf, &index);
+    cert_time.tm_sec = sec;
+  }
+
+  return mktime(&cert_time);
 }
 
 }  // namespace security_manager

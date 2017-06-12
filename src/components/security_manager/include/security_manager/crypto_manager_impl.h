@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Ford Motor Company
+ * Copyright (c) 2016, Ford Motor Company
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,6 +33,7 @@
 #ifndef SRC_COMPONENTS_SECURITY_MANAGER_INCLUDE_SECURITY_MANAGER_CRYPTO_MANAGER_IMPL_H_
 #define SRC_COMPONENTS_SECURITY_MANAGER_INCLUDE_SECURITY_MANAGER_CRYPTO_MANAGER_IMPL_H_
 
+#include <ctime>
 #include <stdint.h>
 #include <openssl/bio.h>
 #include <openssl/ssl.h>
@@ -42,8 +43,6 @@
 
 #include "security_manager/crypto_manager.h"
 #include "security_manager/ssl_context.h"
-#include "security_manager/security_manager_settings.h"
-
 #include "utils/macro.h"
 #include "utils/lock.h"
 #include "utils/shared_ptr.h"
@@ -55,12 +54,12 @@ class CryptoManagerImpl : public CryptoManager {
    public:
     SSLContextImpl(SSL* conn, Mode mode, size_t maximum_payload_size);
     ~SSLContextImpl();
-    virtual HandshakeResult StartHandshake(const uint8_t** const out_data,
-                                           size_t* out_data_size);
-    virtual HandshakeResult DoHandshakeStep(const uint8_t* const in_data,
-                                            size_t in_data_size,
-                                            const uint8_t** const out_data,
-                                            size_t* out_data_size) OVERRIDE;
+    HandshakeResult StartHandshake(const uint8_t** const out_data,
+                                   size_t* out_data_size) OVERRIDE;
+    HandshakeResult DoHandshakeStep(const uint8_t* const in_data,
+                                    size_t in_data_size,
+                                    const uint8_t** const out_data,
+                                    size_t* out_data_size) OVERRIDE;
     bool Encrypt(const uint8_t* const in_data,
                  size_t in_data_size,
                  const uint8_t** const out_data,
@@ -71,6 +70,8 @@ class CryptoManagerImpl : public CryptoManager {
                  size_t* out_data_size) OVERRIDE;
     bool IsInitCompleted() const OVERRIDE;
     bool IsHandshakePending() const OVERRIDE;
+    bool GetCertificateDueDate(time_t& due_date) const OVERRIDE;
+    bool HasCertificate() const OVERRIDE;
     size_t get_max_block_size(size_t mtu) const OVERRIDE;
     std::string LastError() const OVERRIDE;
     void ResetConnection() OVERRIDE;
@@ -85,13 +86,15 @@ class CryptoManagerImpl : public CryptoManager {
                            size_t* out_data_size);
     bool WriteHandshakeData(const uint8_t* const in_data, size_t in_data_size);
     HandshakeResult PerformHandshake();
+    void SetHandshakeError(const int error);
     typedef size_t (*BlockSizeGetter)(size_t);
     void EnsureBufferSizeEnough(size_t size);
-    void SetHandshakeError(const int error);
     HandshakeResult openssl_error_convert_to_internal(const long error);
 
     std::string GetTextBy(X509_NAME* name, int object) const;
 
+    int pull_number_from_buf(char* buf, int* idx) const;
+    time_t asn1_time_to_tm(ASN1_TIME* time) const;
     SSL* connection_;
     BIO* bioIn_;
     BIO* bioOut_;
@@ -101,8 +104,8 @@ class CryptoManagerImpl : public CryptoManager {
     uint8_t* buffer_;
     bool is_handshake_pending_;
     Mode mode_;
-    mutable std::string last_error_;
     BlockSizeGetter max_block_size_;
+    mutable std::string last_error_;
     static std::map<std::string, BlockSizeGetter> max_block_sizes;
     static std::map<std::string, BlockSizeGetter> create_max_block_sizes();
     HandshakeContext hsh_context_;
@@ -115,25 +118,27 @@ class CryptoManagerImpl : public CryptoManager {
   ~CryptoManagerImpl();
 
   bool Init() OVERRIDE;
+  bool is_initialized() const OVERRIDE;
   bool OnCertificateUpdated(const std::string& data) OVERRIDE;
   SSLContext* CreateSSLContext() OVERRIDE;
   void ReleaseSSLContext(SSLContext* context) OVERRIDE;
   std::string LastError() const OVERRIDE;
-  virtual bool IsCertificateUpdateRequired() const OVERRIDE;
-  virtual const CryptoManagerSettings& get_settings() const OVERRIDE;
+  bool IsCertificateUpdateRequired(
+      const time_t system_time, const time_t certificates_time) const OVERRIDE;
+
+  virtual const CryptoManagerSettings& get_settings() const OVERRIDE {
+    return *settings_;
+  }
 
  private:
   bool set_certificate(const std::string& cert_data);
 
-  int pull_number_from_buf(char* buf, int* idx);
-  void asn1_time_to_tm(ASN1_TIME* time);
-  void InitCertExpTime();
+  // TODO (AKutsan) : APPLINK-21595 Use Uniq pointer instead of shared pointer
 
   const utils::SharedPtr<const CryptoManagerSettings> settings_;
   SSL_CTX* context_;
-  mutable struct tm expiration_time_;
-  static uint32_t instance_count_;
   static sync_primitives::Lock instance_lock_;
+  static uint32_t instance_count_;
   DISALLOW_COPY_AND_ASSIGN(CryptoManagerImpl);
 };
 }  // namespace security_manager

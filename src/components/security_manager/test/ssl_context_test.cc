@@ -51,9 +51,12 @@ using ::testing::NiceMock;
 namespace {
 const size_t kUpdatesBeforeHour = 24;
 const std::string kCaPath = "";
+const std::string kInputString =
+    std::string("abrakadabra") + std::string(1024, 'Z');
 const uint8_t* kServerBuf;
 const uint8_t* kClientBuf;
-const std::string kAllCiphers = "ALL";
+const std::string kAllCiphers = SSL_TXT_ALL;
+const std::string kNullCiphers = SSL_TXT_NULL;
 size_t server_buf_len;
 size_t client_buf_len;
 #ifdef __QNXNTO__
@@ -107,7 +110,7 @@ class SSLTest : public testing::Test {
                                                << " data file is empty";
   }
 
-  virtual void SetUp() OVERRIDE {
+  void CustomSetUp(const security_manager::Protocol protocol) {
     mock_crypto_manager_settings_ = utils::MakeShared<
         NiceMock<security_manager_test::MockCryptoManagerSettings> >();
     utils::SharedPtr<security_manager::CryptoManagerSettings> crypto_set(
@@ -117,16 +120,15 @@ class SSLTest : public testing::Test {
     EXPECT_CALL(*mock_crypto_manager_settings_, security_manager_mode())
         .WillOnce(Return(security_manager::SERVER));
     EXPECT_CALL(*mock_crypto_manager_settings_,
-                security_manager_protocol_name())
-        .WillOnce(Return(security_manager::TLSv1_2));
+                security_manager_protocol_name()).WillOnce(Return(protocol));
     EXPECT_CALL(*mock_crypto_manager_settings_, certificate_data())
         .WillOnce(ReturnRef(server_certificate_data_base64_));
     EXPECT_CALL(*mock_crypto_manager_settings_, ciphers_list())
-        .WillRepeatedly(ReturnRef(kAllCiphers));
+        .WillRepeatedly(ReturnRef(kNullCiphers));
     EXPECT_CALL(*mock_crypto_manager_settings_, ca_cert_path())
         .WillRepeatedly(ReturnRef(kCaPath));
     EXPECT_CALL(*mock_crypto_manager_settings_, verify_peer())
-        .WillOnce(Return(false));
+        .WillRepeatedly(Return(false));
     const bool crypto_manager_initialization = crypto_manager_->Init();
     EXPECT_TRUE(crypto_manager_initialization);
 
@@ -139,17 +141,16 @@ class SSLTest : public testing::Test {
     EXPECT_CALL(*mock_client_manager_settings_, security_manager_mode())
         .WillOnce(Return(security_manager::CLIENT));
     EXPECT_CALL(*mock_client_manager_settings_,
-                security_manager_protocol_name())
-        .WillOnce(Return(security_manager::TLSv1_2));
+                security_manager_protocol_name()).WillOnce(Return(protocol));
     EXPECT_CALL(*mock_client_manager_settings_, certificate_data())
         .WillOnce(ReturnRef(client_certificate_data_base64_));
     EXPECT_CALL(*mock_client_manager_settings_, ciphers_list())
-        .WillRepeatedly(ReturnRef(kAllCiphers));
+        .WillRepeatedly(ReturnRef(kNullCiphers));
     EXPECT_CALL(*mock_client_manager_settings_, ca_cert_path())
         .Times(2)
         .WillRepeatedly(ReturnRef(kCaPath));
     EXPECT_CALL(*mock_client_manager_settings_, verify_peer())
-        .WillOnce(Return(false));
+        .WillRepeatedly(Return(false));
     const bool client_manager_initialization = client_manager_->Init();
     EXPECT_TRUE(client_manager_initialization);
 
@@ -159,15 +160,220 @@ class SSLTest : public testing::Test {
         .WillByDefault(Return(kMaximumPayloadSize));
     EXPECT_CALL(*mock_crypto_manager_settings_, security_manager_mode())
         .WillRepeatedly(Return(security_manager::SERVER));
-    server_ctx = crypto_manager_->CreateSSLContext();
+    server_ctx_ = crypto_manager_->CreateSSLContext();
     EXPECT_CALL(*mock_client_manager_settings_, security_manager_mode())
         .Times(2)
         .WillRepeatedly(Return(security_manager::CLIENT));
-    client_ctx = client_manager_->CreateSSLContext();
+    client_ctx_ = client_manager_->CreateSSLContext();
 
-    using custom_str::CustomString;
-    security_manager::SSLContext::HandshakeContext ctx(CustomString("SPT"),
-                                                       CustomString("client"));
+    security_manager::SSLContext::HandshakeContext ctx;
+    ctx.make_context(custom_str::CustomString("SPT"),
+                     custom_str::CustomString("client"));
+    server_ctx_->SetHandshakeContext(ctx);
+
+    ctx.expected_cn = "server";
+    client_ctx_->SetHandshakeContext(ctx);
+
+    kServerBuf = NULL;
+    kClientBuf = NULL;
+    server_buf_len = 0u;
+    client_buf_len = 0u;
+  }
+
+  void TearDown() OVERRIDE {
+    crypto_manager_->ReleaseSSLContext(server_ctx_);
+    client_manager_->ReleaseSSLContext(client_ctx_);
+
+    delete crypto_manager_;
+    delete client_manager_;
+  }
+
+  virtual void TestEstablishHandshake() {
+    ASSERT_EQ(security_manager::SSLContext::Handshake_Result_Success,
+              client_ctx_->StartHandshake(&kClientBuf, &client_buf_len));
+    ASSERT_TRUE(NULL != kClientBuf);
+    ASSERT_LT(0u, client_buf_len);
+    EXPECT_FALSE(server_ctx_->IsInitCompleted());
+
+    while (true) {
+      ASSERT_TRUE(NULL != kClientBuf);
+      ASSERT_LT(0u, client_buf_len);
+      ASSERT_EQ(security_manager::SSLContext::Handshake_Result_Success,
+                server_ctx_->DoHandshakeStep(
+                    kClientBuf, client_buf_len, &kServerBuf, &server_buf_len));
+      ASSERT_TRUE(NULL != kServerBuf);
+      ASSERT_LT(0u, server_buf_len);
+
+      ASSERT_EQ(security_manager::SSLContext::Handshake_Result_Success,
+                client_ctx_->DoHandshakeStep(
+                    kServerBuf, server_buf_len, &kClientBuf, &client_buf_len));
+      if (server_ctx_->IsInitCompleted()) {
+        break;
+      }
+
+      ASSERT_TRUE(NULL != kClientBuf);
+      ASSERT_LT(0u, client_buf_len);
+    }
+    // Expect empty buffers after init complete
+    ASSERT_TRUE(NULL == kClientBuf);
+    ASSERT_EQ(0u, client_buf_len);
+    // Expect both side initialization complete
+    EXPECT_TRUE(client_ctx_->IsInitCompleted());
+    EXPECT_TRUE(server_ctx_->IsInitCompleted());
+  }
+
+  virtual void TestEncryptionOnClientSide() {
+    const size_t text_len = kInputString.size();
+    EXPECT_TRUE(client_ctx_->Encrypt(
+        input_text_, text_len, &encrypted_text_, &encrypted_text_len_));
+    ASSERT_TRUE(NULL != encrypted_text_);
+    ASSERT_LT(0u, encrypted_text_len_);
+  }
+
+  virtual void TestDecryptionOnServerSide() {
+    size_t text_len = kInputString.size();
+    EXPECT_TRUE(server_ctx_->Decrypt(
+        encrypted_text_, encrypted_text_len_, &input_text_, &text_len));
+    ASSERT_TRUE(NULL != input_text_);
+    ASSERT_LT(0u, text_len);
+
+    const std::string output_str =
+        std::string(reinterpret_cast<const char*>(input_text_), text_len);
+    ASSERT_EQ(kInputString, output_str);
+  }
+
+  virtual void TestEcncryptionFail() {
+    TestEstablishHandshake();
+
+    // Encrypt text on client side
+    TestEncryptionOnClientSide();
+
+    std::vector<uint8_t> broken(encrypted_text_,
+                                encrypted_text_ + encrypted_text_len_);
+    // Broke message
+    broken[encrypted_text_len_ / 2] ^= 0xFF;
+
+    const uint8_t* out_text;
+    size_t out_text_size;
+    // Decrypt broken text on server side
+    EXPECT_FALSE(server_ctx_->Decrypt(
+        &broken[0], broken.size(), &out_text, &out_text_size));
+
+    // Check after broken message that server encryption and decryption fail
+    // Encrypt message on server side
+    size_t text_len = kInputString.size();
+    EXPECT_FALSE(server_ctx_->Decrypt(
+        encrypted_text_, encrypted_text_len_, &out_text, &out_text_size));
+    EXPECT_FALSE(server_ctx_->Encrypt(
+        input_text_, text_len, &encrypted_text_, &encrypted_text_len_));
+  }
+
+  virtual void TestSuccessfulConnection() {
+    TestEstablishHandshake();
+
+    // Encrypt text on client side
+    TestEncryptionOnClientSide();
+
+    // Decrypt text on server side
+    TestDecryptionOnServerSide();
+  }
+
+  virtual void TestBrokenHandshake() {
+    ASSERT_EQ(security_manager::SSLContext::Handshake_Result_Success,
+              client_ctx_->StartHandshake(&kClientBuf, &client_buf_len));
+    ASSERT_TRUE(NULL != kClientBuf);
+    ASSERT_LT(0u, client_buf_len);
+    // Broke 3 bytes for get abnormal fail of handshake
+    const_cast<uint8_t*>(kClientBuf)[0] ^= 0xFF;
+    const_cast<uint8_t*>(kClientBuf)[client_buf_len / 2] ^= 0xFF;
+    const_cast<uint8_t*>(kClientBuf)[client_buf_len - 1] ^= 0xFF;
+    EXPECT_EQ(security_manager::SSLContext::Handshake_Result_AbnormalFail,
+              server_ctx_->DoHandshakeStep(
+                  kClientBuf, client_buf_len, &kServerBuf, &server_buf_len));
+    EXPECT_EQ("ok", server_ctx_->LastError());
+    EXPECT_EQ("unexpected record", client_ctx_->LastError());
+  }
+
+  const size_t kMaximumPayloadSize = 1000u;
+  security_manager::CryptoManager* crypto_manager_;
+  security_manager::CryptoManager* client_manager_;
+  utils::SharedPtr<NiceMock<security_manager_test::MockCryptoManagerSettings> >
+      mock_crypto_manager_settings_;
+  utils::SharedPtr<NiceMock<security_manager_test::MockCryptoManagerSettings> >
+      mock_client_manager_settings_;
+  security_manager::SSLContext* server_ctx_;
+  security_manager::SSLContext* client_ctx_;
+
+  const uint8_t* encrypted_text_ = NULL;
+  const uint8_t* input_text_ =
+      reinterpret_cast<const uint8_t*>(kInputString.c_str());
+  size_t encrypted_text_len_;
+
+  static std::string client_certificate_data_base64_;
+  static std::string server_certificate_data_base64_;
+};
+std::string SSLTest::client_certificate_data_base64_;
+std::string SSLTest::server_certificate_data_base64_;
+class TSL12ProtocolTest : public SSLTest {
+ protected:
+  void SetUp() OVERRIDE {
+    CustomSetUp(security_manager::TLSv1_2);
+  }
+};
+
+// StartHandshake() fails when client and server protocols are not TLSv1_2
+class SSLTestParam : public testing::TestWithParam<ProtocolAndCipher> {
+ protected:
+  void SetUp() OVERRIDE {
+    crypto_manager_ = NULL;
+    client_manager_ = NULL;
+    server_ctx = NULL;
+    client_ctx = NULL;
+    std::ifstream certificate_file("server/spt_credential.pem");
+    ASSERT_TRUE(certificate_file.is_open())
+        << "Could not open certificate data file";
+
+    const std::string certificate(
+        (std::istreambuf_iterator<char>(certificate_file)),
+        std::istreambuf_iterator<char>());
+    certificate_file.close();
+    ASSERT_FALSE(certificate.empty()) << "Certificate data file is empty";
+    certificate_data_base64_ = certificate;
+
+    mock_crypto_manager_settings_ = utils::MakeShared<
+        NiceMock<security_manager_test::MockCryptoManagerSettings> >();
+    utils::SharedPtr<security_manager::CryptoManagerSettings> server_crypto(
+        mock_crypto_manager_settings_);
+    crypto_manager_ = new security_manager::CryptoManagerImpl(server_crypto);
+
+    SetServerInitialValues(GetParam().server_protocol,
+                           GetParam().server_ciphers_list);
+
+    const bool crypto_manager_initialization = crypto_manager_->Init();
+    EXPECT_TRUE(crypto_manager_initialization);
+
+    mock_client_manager_settings_ = utils::MakeShared<
+        NiceMock<security_manager_test::MockCryptoManagerSettings> >();
+
+    utils::SharedPtr<security_manager::CryptoManagerSettings> client_crypto(
+        mock_client_manager_settings_);
+    client_manager_ = new security_manager::CryptoManagerImpl(client_crypto);
+
+    SetClientInitialValues(GetParam().client_protocol,
+                           GetParam().client_ciphers_list);
+
+    const bool client_manager_initialization = client_manager_->Init();
+    EXPECT_TRUE(client_manager_initialization);
+
+    server_ctx = crypto_manager_->CreateSSLContext();
+    ASSERT_TRUE(server_ctx) << " Server SSL Contect is not created";
+
+    client_ctx = client_manager_->CreateSSLContext();
+    ASSERT_TRUE(client_ctx) << " Client SSL Contect is not created";
+
+    security_manager::SSLContext::HandshakeContext ctx;
+    ctx.make_context(custom_str::CustomString("SPT"),
+                     custom_str::CustomString("client"));
     server_ctx->SetHandshakeContext(ctx);
 
     ctx.expected_cn = "server";
@@ -185,87 +391,6 @@ class SSLTest : public testing::Test {
 
     delete crypto_manager_;
     delete client_manager_;
-  }
-
-  const size_t kMaximumPayloadSize = 1000u;
-  security_manager::CryptoManager* crypto_manager_;
-  security_manager::CryptoManager* client_manager_;
-  utils::SharedPtr<NiceMock<security_manager_test::MockCryptoManagerSettings> >
-      mock_crypto_manager_settings_;
-  utils::SharedPtr<NiceMock<security_manager_test::MockCryptoManagerSettings> >
-      mock_client_manager_settings_;
-  security_manager::SSLContext* server_ctx;
-  security_manager::SSLContext* client_ctx;
-
-  static std::string client_certificate_data_base64_;
-  static std::string server_certificate_data_base64_;
-};
-std::string SSLTest::client_certificate_data_base64_;
-std::string SSLTest::server_certificate_data_base64_;
-
-// StartHandshake() fails when client and server protocols are not TLSv1_2
-class SSLTestParam : public testing::TestWithParam<ProtocolAndCipher> {
- protected:
-  virtual void SetUp() OVERRIDE {
-    std::ifstream certificate_file("server/spt_credential.p12");
-    ASSERT_TRUE(certificate_file.is_open())
-        << "Could not open certificate data file";
-
-    const std::string certificate(
-        (std::istreambuf_iterator<char>(certificate_file)),
-        std::istreambuf_iterator<char>());
-    certificate_file.close();
-    ASSERT_FALSE(certificate.empty()) << "Certificate data file is empty";
-    certificate_data_base64_ = certificate;
-
-    mock_crypto_manager_settings_ = utils::MakeShared<
-        NiceMock<security_manager_test::MockCryptoManagerSettings> >();
-    utils::SharedPtr<security_manager::CryptoManagerSettings> server_crypto(
-        mock_crypto_manager_settings_);
-    crypto_manager = new security_manager::CryptoManagerImpl(server_crypto);
-
-    SetServerInitialValues(GetParam().server_protocol,
-                           GetParam().server_ciphers_list);
-
-    const bool crypto_manager_initialization = crypto_manager->Init();
-    EXPECT_TRUE(crypto_manager_initialization);
-
-    mock_client_manager_settings_ = utils::MakeShared<
-        NiceMock<security_manager_test::MockCryptoManagerSettings> >();
-
-    utils::SharedPtr<security_manager::CryptoManagerSettings> client_crypto(
-        mock_client_manager_settings_);
-    client_manager = new security_manager::CryptoManagerImpl(client_crypto);
-
-    SetClientInitialValues(GetParam().client_protocol,
-                           GetParam().client_ciphers_list);
-
-    const bool client_manager_initialization = client_manager->Init();
-    EXPECT_TRUE(client_manager_initialization);
-
-    server_ctx = crypto_manager->CreateSSLContext();
-    client_ctx = client_manager->CreateSSLContext();
-
-    using custom_str::CustomString;
-    security_manager::SSLContext::HandshakeContext ctx(CustomString("SPT"),
-                                                       CustomString("client"));
-    server_ctx->SetHandshakeContext(ctx);
-
-    ctx.expected_cn = "server";
-    client_ctx->SetHandshakeContext(ctx);
-
-    kServerBuf = NULL;
-    kClientBuf = NULL;
-    server_buf_len = 0u;
-    client_buf_len = 0u;
-  }
-
-  void TearDown() OVERRIDE {
-    crypto_manager->ReleaseSSLContext(server_ctx);
-    client_manager->ReleaseSSLContext(client_ctx);
-
-    delete crypto_manager;
-    delete client_manager;
   }
 
   void SetServerInitialValues(security_manager::Protocol protocol,
@@ -303,8 +428,8 @@ class SSLTestParam : public testing::TestWithParam<ProtocolAndCipher> {
       mock_crypto_manager_settings_;
   utils::SharedPtr<NiceMock<security_manager_test::MockCryptoManagerSettings> >
       mock_client_manager_settings_;
-  security_manager::CryptoManager* crypto_manager;
-  security_manager::CryptoManager* client_manager;
+  security_manager::CryptoManager* crypto_manager_;
+  security_manager::CryptoManager* client_manager_;
   security_manager::SSLContext* server_ctx;
   security_manager::SSLContext* client_ctx;
   std::string certificate_data_base64_;
@@ -369,132 +494,16 @@ INSTANTIATE_TEST_CASE_P(
                                         kFordCipher,
                                         kFordCipher)));
 
-TEST_F(SSLTest, OnTSL2Protocol_BrokenHandshake) {
-  ASSERT_EQ(security_manager::SSLContext::Handshake_Result_Success,
-            client_ctx->StartHandshake(&kClientBuf, &client_buf_len));
-  ASSERT_FALSE(NULL == kClientBuf);
-  ASSERT_LT(0u, client_buf_len);
-  // Broke 3 bytes for get abnormal fail of handshake
-  const_cast<uint8_t*>(kClientBuf)[0] ^= 0xFF;
-  const_cast<uint8_t*>(kClientBuf)[client_buf_len / 2] ^= 0xFF;
-  const_cast<uint8_t*>(kClientBuf)[client_buf_len - 1] ^= 0xFF;
-  ASSERT_EQ(security_manager::SSLContext::Handshake_Result_AbnormalFail,
-            server_ctx->DoHandshakeStep(
-                kClientBuf, client_buf_len, &kServerBuf, &server_buf_len));
-  EXPECT_EQ("Initialization is not completed", server_ctx->LastError());
-  EXPECT_EQ("Initialization is not completed", client_ctx->LastError());
+TEST_F(TSL12ProtocolTest, BrokenHandshake) {
+  TestBrokenHandshake();
 }
 
-// TODO {AKozoriz} : Unexpected uncomplited init of SSL component.
-// In this and next tests.
-// Must be fixed after merge to develop.
-TEST_F(SSLTest, OnTSL2Protocol_Positive) {
-  ASSERT_EQ(client_ctx->StartHandshake(&kClientBuf, &client_buf_len),
-            security_manager::SSLContext::Handshake_Result_Success);
-  EXPECT_FALSE(server_ctx->IsInitCompleted());
-
-  while (true) {
-    ASSERT_TRUE(NULL != kClientBuf);
-    ASSERT_LT(0u, client_buf_len);
-
-    const security_manager::SSLContext::HandshakeResult server_result =
-        server_ctx->DoHandshakeStep(
-            kClientBuf, client_buf_len, &kServerBuf, &server_buf_len);
-    ASSERT_EQ(security_manager::SSLContext::Handshake_Result_Success,
-              server_result);
-    ASSERT_TRUE(NULL != kServerBuf);
-    ASSERT_LT(0u, server_buf_len);
-
-    const security_manager::SSLContext::HandshakeResult client_result =
-        client_ctx->DoHandshakeStep(
-            kServerBuf, server_buf_len, &kClientBuf, &client_buf_len);
-    ASSERT_EQ(security_manager::SSLContext::Handshake_Result_Success,
-              client_result);
-    if (server_ctx->IsInitCompleted()) {
-      break;
-    }
-
-    ASSERT_FALSE(NULL == kClientBuf);
-    ASSERT_LT(0u, client_buf_len);
-  }
-  // Expect empty buffers after init complete
-  ASSERT_TRUE(NULL == kClientBuf);
-  ASSERT_EQ(0u, client_buf_len);
-  // expect both side initialization complete
-  EXPECT_TRUE(client_ctx->IsInitCompleted());
-  EXPECT_TRUE(server_ctx->IsInitCompleted());
-
-  // Encrypt text on client side
-  const uint8_t* text = reinterpret_cast<const uint8_t*>("abra");
-  const uint8_t* encrypted_text = 0;
-  size_t text_len = 4;
-  size_t encrypted_text_len;
-  EXPECT_TRUE(client_ctx->Encrypt(
-      text, text_len, &encrypted_text, &encrypted_text_len));
-
-  ASSERT_NE(reinterpret_cast<void*>(NULL), encrypted_text);
-  ASSERT_LT(0u, encrypted_text_len);
-
-  // Decrypt text on server side
-  EXPECT_TRUE(server_ctx->Decrypt(
-      encrypted_text, encrypted_text_len, &text, &text_len));
-  ASSERT_NE(reinterpret_cast<void*>(NULL), text);
-  ASSERT_LT(0u, text_len);
-
-  ASSERT_EQ(strncmp(reinterpret_cast<const char*>(text), "abra", 4), 0);
+TEST_F(TSL12ProtocolTest, SuccessfulConnection) {
+  TestSuccessfulConnection();
 }
 
-TEST_F(SSLTest, OnTSL2Protocol_EcncryptionFail) {
-  ASSERT_EQ(security_manager::SSLContext::Handshake_Result_Success,
-            client_ctx->StartHandshake(&kClientBuf, &client_buf_len));
-
-  while (!server_ctx->IsInitCompleted()) {
-    ASSERT_FALSE(NULL == kClientBuf);
-    ASSERT_LT(0u, client_buf_len);
-    ASSERT_EQ(security_manager::SSLContext::Handshake_Result_Success,
-              server_ctx->DoHandshakeStep(
-                  kClientBuf, client_buf_len, &kServerBuf, &server_buf_len));
-    ASSERT_FALSE(NULL == kServerBuf);
-    ASSERT_LT(0u, server_buf_len);
-
-    ASSERT_EQ(security_manager::SSLContext::Handshake_Result_Success,
-              client_ctx->DoHandshakeStep(
-                  kServerBuf, server_buf_len, &kClientBuf, &client_buf_len));
-  }
-  // Expect empty buffers after init complete
-  ASSERT_TRUE(NULL == kClientBuf);
-  ASSERT_EQ(0u, client_buf_len);
-  // Expect both side initialization complete
-  EXPECT_TRUE(client_ctx->IsInitCompleted());
-  EXPECT_TRUE(server_ctx->IsInitCompleted());
-
-  // Encrypt text on client side
-  const uint8_t* text = reinterpret_cast<const uint8_t*>("abra");
-  const uint8_t* encrypted_text = 0;
-  size_t text_len = 4;
-  size_t encrypted_text_len;
-  EXPECT_TRUE(client_ctx->Encrypt(
-      text, text_len, &encrypted_text, &encrypted_text_len));
-  ASSERT_NE(reinterpret_cast<void*>(NULL), encrypted_text);
-  ASSERT_LT(0u, encrypted_text_len);
-
-  std::vector<uint8_t> broken(encrypted_text,
-                              encrypted_text + encrypted_text_len);
-  // Broke message
-  broken[encrypted_text_len / 2] ^= 0xFF;
-
-  const uint8_t* out_text;
-  size_t out_text_size;
-  // Decrypt broken text on server side
-  EXPECT_FALSE(server_ctx->Decrypt(
-      &broken[0], broken.size(), &out_text, &out_text_size));
-
-  // Check after broken message that server encryption and decryption fail
-  // Encrypte message on server side
-  EXPECT_FALSE(server_ctx->Decrypt(
-      encrypted_text, encrypted_text_len, &out_text, &out_text_size));
-  EXPECT_FALSE(server_ctx->Encrypt(
-      text, text_len, &encrypted_text, &encrypted_text_len));
+TEST_F(TSL12ProtocolTest, EcncryptionFail) {
+  TestEcncryptionFail();
 }
 
 TEST_P(SSLTestParam, ClientAndServerNotTLSv1_2_HandshakeFailed) {
@@ -535,10 +544,16 @@ TEST_P(SSLTestForTLS1_2, HandshakeFailed) {
   ASSERT_EQ(security_manager::SSLContext::Handshake_Result_AbnormalFail,
             server_ctx->DoHandshakeStep(
                 kClientBuf, client_buf_len, &kServerBuf, &server_buf_len));
-  EXPECT_TRUE(NULL == kServerBuf);
-  EXPECT_EQ(0u, server_buf_len);
+}
+else {
+  EXPECT_EQ(security_manager::SSLContext::Handshake_Result_Success,
+            server_ctx->DoHandshakeStep(
+                kClientBuf, client_buf_len, &kServerBuf, &server_buf_len));
+}
+EXPECT_TRUE(NULL == kServerBuf);
+EXPECT_EQ(0u, server_buf_len);
 
-  EXPECT_FALSE(server_ctx->IsInitCompleted());
+EXPECT_FALSE(server_ctx->IsInitCompleted());
 }
 
 }  // namespace ssl_context_test

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Ford Motor Company
+ * Copyright (c) 2016, Ford Motor Company
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,7 +33,7 @@
 #ifndef SRC_COMPONENTS_INCLUDE_SECURITY_MANAGER_CRYPTO_MANAGER_H_
 #define SRC_COMPONENTS_INCLUDE_SECURITY_MANAGER_CRYPTO_MANAGER_H_
 
-#include "application_manager/policies/policy_handler_observer.h"
+#include <string>
 #include "security_manager/security_manager_settings.h"
 
 /**
@@ -53,20 +53,22 @@
 namespace security_manager {
 class SSLContext;
 
-class CryptoManager : public policy::PolicyHandlerObserver {
+class CryptoManager {
  public:
   /**
    * @brief Init allows to initialize cryptomanager with certain values.
    *
-   * @return true in case initialization was succesful, false otherwise.
+   * @return true in case initialization was succesfull, false otherwise.
    */
   virtual bool Init() = 0;
-  virtual SSLContext* CreateSSLContext() = 0;
+  virtual bool is_initialized() const = 0;
   virtual bool OnCertificateUpdated(const std::string& data) = 0;
+  virtual SSLContext* CreateSSLContext() = 0;
   virtual void ReleaseSSLContext(SSLContext* context) = 0;
   virtual std::string LastError() const = 0;
 
-  virtual bool IsCertificateUpdateRequired() const = 0;
+  virtual bool IsCertificateUpdateRequired(
+      const time_t system_time, const time_t certificates_time) const = 0;
   /**
   * \brief Crypto manager settings getter
   * \return pointer to crypto manager settings class

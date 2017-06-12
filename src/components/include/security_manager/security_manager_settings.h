@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Ford Motor Company
+ * Copyright (c) 2016, Ford Motor Company
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,9 +33,12 @@
 #ifndef SRC_COMPONENTS_INCLUDE_SECURITY_MANAGER_SECURITY_MANAGER_SETTINGS_H_
 #define SRC_COMPONENTS_INCLUDE_SECURITY_MANAGER_SECURITY_MANAGER_SETTINGS_H_
 
+#include <string>
+#include <vector>
+
 namespace security_manager {
 enum Mode { CLIENT, SERVER };
-enum Protocol { SSLv3, TLSv1, TLSv1_1, TLSv1_2 };
+enum Protocol { UNKNOWN = -1, SSLv3, TLSv1, TLSv1_1, TLSv1_2 };
 /**
  * \class ConnectionHandlerSettings
  * \brief Interface for connection handler component settings.

@@ -1292,11 +1292,10 @@ ApplicationManagerImpl::GetHandshakeContext(uint32_t key) const {
   LOG4CXX_AUTO_TRACE(logger_);
   using security_manager::SSLContext;
   ApplicationConstSharedPtr app = application(key);
-  if (app) {
-    return SSLContext::HandshakeContext(
-        custom_str::CustomString(app->policy_app_id()), app->name());
-  }
-  return SSLContext::HandshakeContext();
+  security_manager::SSLContext::HandshakeContext res;
+  DCHECK_OR_RETURN(app.valid(), res);
+  return res.make_context(custom_str::CustomString(app->policy_app_id()),
+                          app->name());
 }
 #endif  // ENABLE_SECURITY
 

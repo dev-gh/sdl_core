@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Ford Motor Company
+ * Copyright (c) 2015, Ford Motor Company
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -37,20 +37,25 @@
 #include <openssl/err.h>
 #include <openssl/pkcs12.h>
 
-#include <fstream>
-#include <iostream>
-#include <stdio.h>
 #include <ctime>
-#include "security_manager/security_manager.h"
+#include <fstream>
+#include <sstream>
+#include <stdio.h>
 
+#include "security_manager/security_manager.h"
 #include "utils/logger.h"
 #include "utils/atomic.h"
+#include "utils/file_system.h"
 #include "utils/macro.h"
 #include "utils/scope_guard.h"
-#include "utils/date_time.h"
 
 #define TLS1_1_MINIMAL_VERSION 0x1000103fL
 #define CONST_SSL_METHOD_MINIMAL_VERSION 0x00909000L
+// Ubuntu 16.04 - 0x1000207fL "OpenSSL 1.0.2g-fips  1 Mar 2016"
+// The SSLv3 context is NULL
+// Ubuntu 14.04 - 0x1000106fL "OpenSSL 1.0.1f 6 Jan 2014"
+// The SSLv3 context is not NULL
+#define SSL3_MAXIMAL_VERSION 0x1000106fL
 
 namespace security_manager {
 
@@ -59,26 +64,18 @@ CREATE_LOGGERPTR_GLOBAL(logger_, "SecurityManager")
 uint32_t CryptoManagerImpl::instance_count_ = 0;
 sync_primitives::Lock CryptoManagerImpl::instance_lock_;
 
-namespace {
-int debug_callback(int preverify_ok, X509_STORE_CTX* ctx) {
-  if (!preverify_ok) {
-    const int error = X509_STORE_CTX_get_error(ctx);
-    UNUSED(error);
-    LOG4CXX_WARN(logger_,
-                 "Certificate verification failed with error "
-                     << error << " \"" << X509_verify_cert_error_string(error)
-                     << '"');
-  }
-  return preverify_ok;
-}
+// Handshake verification callback
+// Used for debug outpute only
+int verify_callback(int preverify_ok, X509_STORE_CTX* ctx);
 
+namespace {
 void free_ctx(SSL_CTX** ctx) {
   if (ctx) {
     SSL_CTX_free(*ctx);
     *ctx = NULL;
   }
 }
-}
+}  // namespace
 
 CryptoManagerImpl::CryptoManagerImpl(
     const utils::SharedPtr<const CryptoManagerSettings> set)
@@ -93,7 +90,6 @@ CryptoManagerImpl::CryptoManagerImpl(
     OpenSSL_add_all_algorithms();
     SSL_library_init();
   }
-  InitCertExpTime();
 }
 
 CryptoManagerImpl::~CryptoManagerImpl() {
@@ -137,7 +133,14 @@ bool CryptoManagerImpl::Init() {
 #endif
   switch (get_settings().security_manager_protocol_name()) {
     case SSLv3:
+#if OPENSSL_VERSION_NUMBER > SSL3_MAXIMAL_VERSION
+      LOG4CXX_WARN(logger_,
+                   "OpenSSL has no valid SSLv3 context with version higher "
+                   "than 1.0.1, set TLSv1.0");
+      method = is_server ? TLSv1_server_method() : TLSv1_client_method();
+#else
       method = is_server ? SSLv3_server_method() : SSLv3_client_method();
+#endif
       break;
     case TLSv1:
       method = is_server ? TLSv1_server_method() : TLSv1_client_method();
@@ -172,6 +175,18 @@ bool CryptoManagerImpl::Init() {
     free_ctx(&context_);
   }
   context_ = SSL_CTX_new(method);
+  if (!context_) {
+    const unsigned long error = ERR_get_error();
+    UNUSED(error);
+    LOG4CXX_ERROR(logger_,
+                  "Could not create \""
+                      << (is_server ? "server" : "client")
+                      << "\" SSL method \"'"
+                      << get_settings().security_manager_protocol_name()
+                      << "\"', err 0x" << std::hex << error << " \""
+                      << ERR_reason_error_string(error) << '"');
+    return false;
+  }
 
   utils::ScopeGuard guard = utils::MakeGuard(free_ctx, &context_);
 
@@ -219,13 +234,17 @@ bool CryptoManagerImpl::Init() {
           : SSL_VERIFY_NONE;
   LOG4CXX_DEBUG(logger_,
                 "Setting up peer verification in mode: " << verify_mode);
-  SSL_CTX_set_verify(context_, verify_mode, &debug_callback);
+  SSL_CTX_set_verify(context_, verify_mode, &verify_callback);
   return true;
+}
+
+bool CryptoManagerImpl::is_initialized() const {
+  return context_;
 }
 
 bool CryptoManagerImpl::OnCertificateUpdated(const std::string& data) {
   LOG4CXX_AUTO_TRACE(logger_);
-  if (!context_) {
+  if (!is_initialized()) {
     LOG4CXX_WARN(logger_, "Not initialized");
     return false;
   }
@@ -235,12 +254,15 @@ bool CryptoManagerImpl::OnCertificateUpdated(const std::string& data) {
 
 SSLContext* CryptoManagerImpl::CreateSSLContext() {
   if (context_ == NULL) {
+    LOG4CXX_ERROR(logger_, "Not initialized");
     return NULL;
   }
 
   SSL* conn = SSL_new(context_);
-  if (conn == NULL)
+  if (conn == NULL) {
+    LOG4CXX_ERROR(logger_, "SSL context was not created - " << LastError());
     return NULL;
+  }
 
   if (get_settings().security_manager_mode() == SERVER) {
     SSL_set_accept_state(conn);
@@ -257,157 +279,104 @@ void CryptoManagerImpl::ReleaseSSLContext(SSLContext* context) {
 }
 
 std::string CryptoManagerImpl::LastError() const {
-  if (!context_) {
-    return std::string("Initialization is not completed");
+  const unsigned long openssl_error_id = ERR_get_error();
+  std::stringstream string_stream;
+  if (openssl_error_id == 0) {
+    string_stream << "no openssl error occurs";
+  } else {
+    const char* error_string = ERR_reason_error_string(openssl_error_id);
+    string_stream << "error: 0x" << std::hex << openssl_error_id << ", \""
+                  << std::string(error_string ? error_string : "") << '"';
   }
-  const char* reason = ERR_reason_error_string(ERR_get_error());
-  return std::string(reason ? reason : "");
+  if (!is_initialized()) {
+    string_stream << ", initialization is not completed";
+  }
+  return string_stream.str();
 }
 
-bool CryptoManagerImpl::IsCertificateUpdateRequired() const {
+bool CryptoManagerImpl::IsCertificateUpdateRequired(
+    const time_t system_time, const time_t certificates_time) const {
   LOG4CXX_AUTO_TRACE(logger_);
 
-  const time_t cert_date = mktime(&expiration_time_);
+  const double seconds = difftime(certificates_time, system_time);
 
-  if (cert_date == -1) {
-    LOG4CXX_WARN(logger_,
-                 "The certifiacte expiration time cannot be represented.");
-    return false;
-  }
-  const time_t now = time(NULL);
-  const double seconds = difftime(cert_date, now);
+  LOG4CXX_DEBUG(
+      logger_, "Certificate UTC time: " << asctime(gmtime(&certificates_time)));
+  LOG4CXX_DEBUG(logger_, "Host UTC time: " << asctime(gmtime(&system_time)));
+  LOG4CXX_DEBUG(logger_, "Seconds before expiration: " << seconds);
 
-  LOG4CXX_DEBUG(logger_,
-                "Certificate expiration time: " << asctime(&expiration_time_));
-  LOG4CXX_DEBUG(logger_,
-                "Host time: " << asctime(localtime(&now))
-                              << ". Seconds before expiration: " << seconds);
-  if (seconds < 0) {
-    LOG4CXX_WARN(logger_, "Certificate is already expired.");
-    return true;
-  }
-
-  return seconds <= (get_settings().update_before_hours() *
-                     date_time::DateTime::SECONDS_IN_HOUR);
+  return seconds <= (get_settings().update_before_hours() * 60 * 60);
 }
 
-const CryptoManagerSettings& CryptoManagerImpl::get_settings() const {
-  return *settings_;
+int verify_callback(int preverify_ok, X509_STORE_CTX* ctx) {
+  if (!preverify_ok) {
+    const int error = X509_STORE_CTX_get_error(ctx);
+    if (error == X509_V_ERR_CERT_NOT_YET_VALID ||
+        error == X509_V_ERR_CERT_HAS_EXPIRED) {
+      // return success result code instead of error because date
+      // will be checked within SSLContextImpl
+      return 1;
+    }
+
+    LOG4CXX_WARN(logger_,
+                 "Certificate verification failed with error "
+                     << error << " \"" << X509_verify_cert_error_string(error)
+                     << '"');
+  }
+  return preverify_ok;
 }
 
 bool CryptoManagerImpl::set_certificate(const std::string& cert_data) {
   LOG4CXX_AUTO_TRACE(logger_);
   if (cert_data.empty()) {
-    LOG4CXX_WARN(logger_, "Empty certificate");
+    LOG4CXX_WARN(logger_, "Empty certificate data");
     return false;
   }
-
-  BIO* bio = BIO_new(BIO_f_base64());
-  BIO* bmem = BIO_new_mem_buf((char*)cert_data.c_str(), cert_data.length());
-  bmem = BIO_push(bio, bmem);
-
-  char* buf = new char[cert_data.length()];
-  int len = BIO_read(bmem, buf, cert_data.length());
 
   LOG4CXX_DEBUG(logger_,
                 "Updating certificate and key from base64 data: \" "
                     << cert_data);
 
-  BIO* bio_cert = BIO_new_mem_buf(
-      const_cast<std::string::pointer>(cert_data.data()), cert_data.length());
-  if (NULL == bio_cert) {
-    LOG4CXX_WARN(logger_, "Unable to update certificate. BIO not created");
-    return false;
-  }
+  BIO* bio_cert =
+      BIO_new_mem_buf(const_cast<char*>(cert_data.c_str()), cert_data.length());
 
   utils::ScopeGuard bio_guard = utils::MakeGuard(BIO_free, bio_cert);
   UNUSED(bio_guard)
-  int k = 0;
-  if ((k = BIO_write(bio_cert, buf, len)) <= 0) {
-    LOG4CXX_WARN(logger_, "Unable to write into BIO");
-    return false;
-  }
 
-  PKCS12* p12 = d2i_PKCS12_bio(bio_cert, NULL);
-  if (NULL == p12) {
-    LOG4CXX_ERROR(logger_, "Unable to parse certificate");
-    return false;
-  }
+  X509* cert = NULL;
+  PEM_read_bio_X509(bio_cert, &cert, 0, 0);
 
   EVP_PKEY* pkey = NULL;
-  X509* cert = NULL;
-  PKCS12_parse(p12, NULL, &pkey, &cert, NULL);
+  if (1 == BIO_reset(bio_cert)) {
+    PEM_read_bio_PrivateKey(bio_cert, &pkey, 0, 0);
+  } else {
+    LOG4CXX_WARN(logger_,
+                 "Unabled to reset BIO in order to read private key, "
+                     << LastError());
+  }
 
   if (NULL == cert || NULL == pkey) {
-    LOG4CXX_WARN(logger_, "Either certificate or key not valid.");
+    LOG4CXX_WARN(logger_,
+                 "Either certificate or key not valid, " << LastError());
     return false;
   }
 
   if (!SSL_CTX_use_certificate(context_, cert)) {
-    LOG4CXX_WARN(logger_, "Could not use certificate");
+    LOG4CXX_WARN(logger_, "Could not use certificate, " << LastError());
     return false;
   }
 
-  asn1_time_to_tm(X509_get_notAfter(cert));
-
   if (!SSL_CTX_use_PrivateKey(context_, pkey)) {
-    LOG4CXX_ERROR(logger_, "Could not use key");
+    LOG4CXX_ERROR(logger_, "Could not use key, " << LastError());
     return false;
   }
   if (!SSL_CTX_check_private_key(context_)) {
-    LOG4CXX_ERROR(logger_, "Could not use certificate ");
+    LOG4CXX_ERROR(logger_, "Could not check private key, " << LastError());
     return false;
   }
 
-  LOG4CXX_DEBUG(logger_, "Certificate and key data successfully updated");
+  LOG4CXX_INFO(logger_, "Certificate and key data successfully updated");
   return true;
-}
-
-int CryptoManagerImpl::pull_number_from_buf(char* buf, int* idx) {
-  if (!idx) {
-    return 0;
-  }
-  const int val = ((buf[*idx] - '0') * 10) + buf[(*idx) + 1] - '0';
-  *idx = *idx + 2;
-  return val;
-}
-
-void CryptoManagerImpl::asn1_time_to_tm(ASN1_TIME* time) {
-  char* buf = (char*)time->data;
-  int index = 0;
-  const int year = pull_number_from_buf(buf, &index);
-  if (V_ASN1_GENERALIZEDTIME == time->type) {
-    expiration_time_.tm_year =
-        (year * 100 - 1900) + pull_number_from_buf(buf, &index);
-  } else {
-    expiration_time_.tm_year = year < 50 ? year + 100 : year;
-  }
-
-  const int mon = pull_number_from_buf(buf, &index);
-  const int day = pull_number_from_buf(buf, &index);
-  const int hour = pull_number_from_buf(buf, &index);
-  const int mn = pull_number_from_buf(buf, &index);
-
-  expiration_time_.tm_mon = mon - 1;
-  expiration_time_.tm_mday = day;
-  expiration_time_.tm_hour = hour;
-  expiration_time_.tm_min = mn;
-
-  if (buf[index] == 'Z') {
-    expiration_time_.tm_sec = 0;
-  }
-  if ((buf[index] == '+') || (buf[index] == '-')) {
-    const int mn = pull_number_from_buf(buf, &index);
-    const int mn1 = pull_number_from_buf(buf, &index);
-    expiration_time_.tm_sec = (mn * 3600) + (mn1 * 60);
-  } else {
-    const int sec = pull_number_from_buf(buf, &index);
-    expiration_time_.tm_sec = sec;
-  }
-}
-
-void CryptoManagerImpl::InitCertExpTime() {
-  strptime("1 Jan 1970 00:00:00", "%d %b %Y %H:%M:%S", &expiration_time_);
 }
 
 }  // namespace security_manager
