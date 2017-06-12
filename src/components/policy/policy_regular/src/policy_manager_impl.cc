@@ -1128,7 +1128,6 @@ void PolicyManagerImpl::RetrySequence() {
   update_status_manager_.OnUpdateTimeoutOccurs();
   if (!current_retry_sequence_timeout_ && timer_retry_sequence_.is_running()) {
     timer_retry_sequence_.Stop();
-    listener()->OnPTUFinished(false);
     return;
   }
   RequestPTUpdate();
