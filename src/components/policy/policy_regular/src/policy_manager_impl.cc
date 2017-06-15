@@ -172,7 +172,7 @@ bool PolicyManagerImpl::LoadPT(const std::string& file,
     wrong_ptu_update_received_ = true;
     update_status_manager_.OnWrongUpdateReceived();
     listener_->OnCertificateUpdated(empty_certificate);
-    return false;
+    return true;
   }
 
   update_status_manager_.OnValidUpdateReceived();
