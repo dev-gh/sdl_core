@@ -260,9 +260,12 @@ void SecurityManagerImpl::ProceedHandshake(
   }
 
   time_t cert_due_date;
-  if (ssl_context->GetCertificateDueDate(cert_due_date)) {
-    crypto_manager_->IsCertificateUpdateRequired(
-        system_time_handler_->GetUTCTime(), cert_due_date);
+  if (!ssl_context->GetCertificateDueDate(cert_due_date)) {
+    LOG4CXX_ERROR(logger_, "Failed to get certificate due date!");
+    return;
+  }
+  if (crypto_manager_->IsCertificateUpdateRequired(
+          system_time_handler_->GetUTCTime(), cert_due_date)) {
     NotifyOnCertififcateUpdateRequired();
   }
 
