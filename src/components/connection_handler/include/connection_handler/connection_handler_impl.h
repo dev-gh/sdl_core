@@ -187,7 +187,7 @@ class ConnectionHandlerImpl
       const uint8_t session_id,
       const protocol_handler::ServiceType& service_type,
       const bool is_protected,
-      uint32_t* hash_id);
+      uint32_t* hash_id) OVERRIDE;
 
   /**
    * \brief Callback function used by ProtocolHandler
@@ -204,6 +204,10 @@ class ConnectionHandlerImpl
       const uint8_t session_id,
       const uint32_t& hashCode,
       const protocol_handler::ServiceType& service_type) OVERRIDE;
+
+  bool StartService(const transport_manager::ConnectionUID connection_handle,
+                    const uint8_t sessionId,
+                    const protocol_handler::ServiceType service_type) OVERRIDE;
 
   /**
    * \brief Callback function used by ProtocolHandler

@@ -97,6 +97,11 @@ class SessionObserver {
       const uint32_t& hashCode,
       const protocol_handler::ServiceType& service_type) = 0;
 
+  virtual bool StartService(
+      const transport_manager::ConnectionUID connection_handle,
+      const uint8_t sessionId,
+      const protocol_handler::ServiceType service_type) = 0;
+
   /**
    * \brief Callback function used by ProtocolHandler
    * when Mobile Application start message flood

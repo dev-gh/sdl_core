@@ -329,22 +329,6 @@ uint32_t ConnectionHandlerImpl::OnSessionStartedCallback(
       *hash_id = protocol_handler::HASH_ID_NOT_SUPPORTED;
     }
   }
-  sync_primitives::AutoReadLock read_lock(connection_handler_observer_lock_);
-  if (connection_handler_observer_) {
-    const uint32_t session_key = KeyFromPair(connection_handle, new_session_id);
-    const bool success = connection_handler_observer_->OnServiceStartedCallback(
-        connection->connection_device_handle(), session_key, service_type);
-    if (!success) {
-      LOG4CXX_WARN(logger_,
-                   "Service starting forbidden by connection_handler_observer");
-      if (protocol_handler::kRpc == service_type) {
-        connection->RemoveSession(new_session_id);
-      } else {
-        connection->RemoveService(session_id, service_type);
-      }
-      return 0;
-    }
-  }
   return new_session_id;
 }
 
@@ -435,6 +419,42 @@ uint32_t ConnectionHandlerImpl::OnSessionEndedCallback(
         session_key, service_type, CloseSessionReason::kCommon);
   }
   return session_key;
+}
+
+bool ConnectionHandlerImpl::StartService(
+    const transport_manager::ConnectionUID connection_handle,
+    const uint8_t sessionId,
+    const protocol_handler::ServiceType service_type) {
+  Connection* connection = NULL;
+  {
+    sync_primitives::AutoReadLock lock(connection_list_lock_);
+    ConnectionList::iterator it = connection_list_.find(connection_handle);
+    if (connection_list_.end() == it) {
+      LOG4CXX_ERROR(logger_, "Unknown connection!");
+      return false;
+    }
+    connection = it->second;
+  }
+
+  sync_primitives::AutoReadLock read_lock(connection_handler_observer_lock_);
+
+  if (connection_handler_observer_) {
+    const uint32_t session_key = KeyFromPair(connection_handle, sessionId);
+    const bool success = connection_handler_observer_->OnServiceStartedCallback(
+        connection->connection_device_handle(), session_key, service_type);
+    if (!success) {
+      LOG4CXX_WARN(logger_,
+                   "Service starting forbidden by connection_handler_observer");
+      if (protocol_handler::kRpc == service_type) {
+        connection->RemoveSession(sessionId);
+      } else {
+        connection->RemoveService(sessionId, service_type);
+      }
+      return false;
+    }
+  }
+
+  return true;
 }
 
 uint32_t ConnectionHandlerImpl::KeyFromPair(

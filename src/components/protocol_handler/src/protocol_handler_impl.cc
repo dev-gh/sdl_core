@@ -1038,12 +1038,15 @@ class StartSessionHandler : public security_manager::SecurityManagerListener {
     }
 
     if (start_session_result) {
-      protocol_handler_->SendStartSessionAck(connection_id_,
-                                             session_id_,
-                                             protocol_version_,
-                                             hash_id_,
-                                             service_type_,
-                                             handshake_success);
+      if (protocol_handler_->get_session_observer().StartService(
+              connection_id_, session_id_, service_type_)) {
+        protocol_handler_->SendStartSessionAck(connection_id_,
+                                               session_id_,
+                                               protocol_version_,
+                                               hash_id_,
+                                               service_type_,
+                                               handshake_success);
+      }
     } else {
       protocol_handler_->SendStartSessionNAck(
           connection_id_, session_id_, protocol_version_, service_type_);
@@ -1122,6 +1125,12 @@ RESULT_CODE ProtocolHandlerImpl::HandleControlMessageStartSession(
           connection_key,
           security_manager::SecurityManager::ERROR_INTERNAL,
           error);
+
+      if (!session_observer_.StartService(
+              connection_id, session_id, service_type)) {
+        return RESULT_FAIL;
+      }
+
       // Start service without protection
       SendStartSessionAck(connection_id,
                           session_id,
@@ -1134,6 +1143,12 @@ RESULT_CODE ProtocolHandlerImpl::HandleControlMessageStartSession(
     if (ssl_context->IsInitCompleted()) {
       // mark service as protected
       session_observer_.SetProtectionFlag(connection_key, service_type);
+
+      if (!session_observer_.StartService(
+              connection_id, session_id, service_type)) {
+        return RESULT_FAIL;
+      }
+
       // Start service as protected with current SSLContext
       SendStartSessionAck(connection_id,
                           session_id,
