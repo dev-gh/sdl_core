@@ -1116,11 +1116,6 @@ TEST_F(ConnectionHandlerTest, SessionStarted_WithRpc) {
       mock_connection_handler_observer;
   connection_handler_->set_connection_handler_observer(
       &mock_connection_handler_observer);
-  uint32_t session_key =
-      connection_handler_->KeyFromPair(uid_, start_session_id_);
-  EXPECT_CALL(mock_connection_handler_observer,
-              OnServiceStartedCallback(device_handle_, session_key, kRpc))
-      .WillOnce(Return(true));
 
   // Start new session with RPC service
   uint32_t new_session_id = connection_handler_->OnSessionStartedCallback(
