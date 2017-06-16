@@ -176,7 +176,7 @@ class SecurityManagerImpl : public SecurityManager,
   static const char* ConfigSection();
 
 #ifdef BUILD_TESTS
-  const SecurityMessageLoop& get_security_messages_queue() const {
+  SecurityMessageLoop& get_security_messages_queue() {
     return security_messages_;
   }
 #endif

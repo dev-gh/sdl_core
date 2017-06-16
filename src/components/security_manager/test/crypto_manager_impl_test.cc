@@ -211,6 +211,7 @@ TEST_F(CryptoManagerTest, OnCertificateUpdated) {
 
 TEST_F(CryptoManagerTest, OnCertificateUpdated_UpdateNotRequired) {
   size_t updates_before = 0;
+
   SetInitialValues(security_manager::CLIENT, kTestProtocol, kAllCiphers);
   bool crypto_manager_initialization = crypto_manager_->Init();
   ASSERT_TRUE(crypto_manager_initialization);
@@ -222,13 +223,19 @@ TEST_F(CryptoManagerTest, OnCertificateUpdated_UpdateNotRequired) {
       crypto_manager_->CreateSSLContext();
   EXPECT_TRUE(ssl_context);
 
-  time_t cert_due_time;
+  struct tm year_2020 = {0};
+  year_2020.tm_year = 120;
+  year_2020.tm_mday = 1;
+  time_t cert_due_time = mktime(&year_2020);
   ssl_context->GetCertificateDueDate(cert_due_time);
 
   EXPECT_CALL(*mock_security_manager_settings_, update_before_hours())
       .WillOnce(Return(updates_before));
 
-  time_t system_time;
+  struct tm year_2015 = {0};
+  year_2015.tm_year = 115;
+  year_2015.tm_mday = 1;
+  time_t system_time = mktime(&year_2015);
   EXPECT_FALSE(
       crypto_manager_->IsCertificateUpdateRequired(system_time, cert_due_time));
 

@@ -540,13 +540,16 @@ TEST_F(SecurityManagerTest, StartHandshake_SSLInternalError) {
               ProtocolVersionUsed(connection_id, session_id, _))
       .WillOnce(Return(true));
 
+  EXPECT_CALL(mock_crypto_manager, IsCertificateUpdateRequired(_, _))
+      .WillOnce(Return(false));
   // Expect InternalError with ERROR_ID
   EXPECT_CALL(
       mock_protocol_handler,
       SendMessageToMobileApp(
           InternalErrorWithErrId(SecurityManager::ERROR_INTERNAL), is_final));
   // Expect DueDateRead
-  EXPECT_CALL(mock_ssl_context_exists, GetCertificateDueDate(_));
+  EXPECT_CALL(mock_ssl_context_exists, GetCertificateDueDate(_))
+      .WillOnce(Return(true));
   // Expect notifying listeners (unsuccess)
   EXPECT_CALL(mock_sm_listener,
               OnHandshakeDone(key, SSLContext::Handshake_Result_Fail))
@@ -584,6 +587,9 @@ TEST_F(SecurityManagerTest, StartHandshake_SSLInitIsNotComplete) {
   EXPECT_CALL(mock_session_observer,
               ProtocolVersionUsed(connection_id, session_id, _))
       .WillOnce(Return(true));
+  EXPECT_CALL(mock_crypto_manager, IsCertificateUpdateRequired(_, _))
+      .Times(3)
+      .WillRepeatedly(Return(false));
 
   // Expect send one message (with correct pointer and size data)
   EXPECT_CALL(mock_protocol_handler, SendMessageToMobileApp(_, is_final));
@@ -593,7 +599,9 @@ TEST_F(SecurityManagerTest, StartHandshake_SSLInitIsNotComplete) {
       .Times(6)
       .WillRepeatedly(Return(&mock_ssl_context_exists));
   // Read DueDate
-  EXPECT_CALL(mock_ssl_context_exists, GetCertificateDueDate(_)).Times(3);
+  EXPECT_CALL(mock_ssl_context_exists, GetCertificateDueDate(_))
+      .Times(3)
+      .WillRepeatedly(Return(true));
   EXPECT_CALL(mock_ssl_context_exists, HasCertificate())
       .WillRepeatedly(Return(true));
   // Expect initialization check on each call StartHandshake
@@ -610,7 +618,7 @@ TEST_F(SecurityManagerTest, StartHandshake_SSLInitIsNotComplete) {
           SetArgPointee<1>(0),
           Return(security_manager::SSLContext::Handshake_Result_Success)))
       .WillOnce(DoAll(
-          SetArgPointee<0>((uint8_t*)NULL),
+          SetArgPointee<0>(static_cast<uint8_t*>(NULL)),
           SetArgPointee<1>(handshake_data_out_size),
           Return(security_manager::SSLContext::Handshake_Result_Success)))
       .WillOnce(DoAll(
@@ -782,7 +790,7 @@ TEST_F(SecurityManagerTest, ProccessHandshakeData_InvalidData) {
           SetArgPointee<3>(handshake_data_out_size),
           Return(security_manager::SSLContext::Handshake_Result_AbnormalFail)))
       .WillOnce(DoAll(
-          SetArgPointee<2>((uint8_t*)NULL),
+          SetArgPointee<2>(static_cast<uint8_t*>(NULL)),
           SetArgPointee<3>(handshake_data_out_size),
           Return(security_manager::SSLContext::Handshake_Result_AbnormalFail)))
       .WillOnce(DoAll(
@@ -790,7 +798,7 @@ TEST_F(SecurityManagerTest, ProccessHandshakeData_InvalidData) {
           SetArgPointee<3>(0),
           Return(security_manager::SSLContext::Handshake_Result_AbnormalFail)))
       .WillOnce(DoAll(
-          SetArgPointee<2>((uint8_t*)NULL),
+          SetArgPointee<2>(static_cast<uint8_t*>(NULL)),
           SetArgPointee<3>(0),
           Return(security_manager::SSLContext::Handshake_Result_AbnormalFail)));
 
@@ -959,11 +967,11 @@ TEST_F(SecurityManagerTest, ProccessHandshakeData_HandshakeFinished) {
       .
       // two states with with null pointer data
       WillOnce(DoAll(
-          SetArgPointee<2>((uint8_t*)NULL),
+          SetArgPointee<2>(static_cast<uint8_t*>(NULL)),
           SetArgPointee<3>(handshake_data_out_size),
           Return(security_manager::SSLContext::Handshake_Result_Success)))
       .WillOnce(
-           DoAll(SetArgPointee<2>((uint8_t*)NULL),
+           DoAll(SetArgPointee<2>(static_cast<uint8_t*>(NULL)),
                  SetArgPointee<3>(handshake_data_out_size),
                  Return(security_manager::SSLContext::Handshake_Result_Fail)))
       .

@@ -64,10 +64,12 @@ class MockSSLContext : public ::security_manager::SSLContext {
                     size_t* out_data_size));
   MOCK_CONST_METHOD0(IsInitCompleted, bool());
   MOCK_CONST_METHOD0(IsHandshakePending, bool());
+  MOCK_CONST_METHOD1(GetCertificateDueDate, bool(time_t& due_date));
   MOCK_CONST_METHOD1(get_max_block_size, size_t(size_t mtu));
   MOCK_CONST_METHOD0(LastError, std::string());
   MOCK_METHOD0(ResetConnection, void());
   MOCK_METHOD1(SetHandshakeContext, void(const HandshakeContext& hsh_ctx));
+  MOCK_CONST_METHOD0(HasCertificate, bool());
 };
 }  // namespace security_manager_test
 }  // namespace components

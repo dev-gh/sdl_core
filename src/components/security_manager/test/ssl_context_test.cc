@@ -541,19 +541,15 @@ TEST_P(SSLTestForTLS1_2, HandshakeFailed) {
             client_ctx->StartHandshake(&kClientBuf, &client_buf_len));
   EXPECT_FALSE(NULL == kClientBuf);
   ASSERT_LT(0u, client_buf_len);
-  ASSERT_EQ(security_manager::SSLContext::Handshake_Result_AbnormalFail,
-            server_ctx->DoHandshakeStep(
-                kClientBuf, client_buf_len, &kServerBuf, &server_buf_len));
-}
-else {
-  EXPECT_EQ(security_manager::SSLContext::Handshake_Result_Success,
-            server_ctx->DoHandshakeStep(
-                kClientBuf, client_buf_len, &kServerBuf, &server_buf_len));
-}
-EXPECT_TRUE(NULL == kServerBuf);
-EXPECT_EQ(0u, server_buf_len);
 
-EXPECT_FALSE(server_ctx->IsInitCompleted());
+  EXPECT_EQ(security_manager::SSLContext::Handshake_Result_AbnormalFail,
+            server_ctx->DoHandshakeStep(
+                kClientBuf, client_buf_len, &kServerBuf, &server_buf_len));
+
+  EXPECT_TRUE(NULL == kServerBuf);
+  EXPECT_EQ(0u, server_buf_len);
+
+  EXPECT_FALSE(server_ctx->IsInitCompleted());
 }
 
 }  // namespace ssl_context_test

@@ -97,6 +97,15 @@ class SessionObserver {
       const uint32_t& hashCode,
       const protocol_handler::ServiceType& service_type) = 0;
 
+  /**
+   * @brief StartService triggers upper layers callback to start action related
+   * to certain service activation. In case of activation won't succeed, service
+   * is removed from session or whole session is closed if it is RPC service
+   * @param connection_handle Connection handle
+   * @param sessionId ID of session
+   * @param service_type Service type
+   * @return true if service started successfully, otherwise - false
+   */
   virtual bool StartService(
       const transport_manager::ConnectionUID connection_handle,
       const uint8_t sessionId,
