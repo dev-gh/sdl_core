@@ -1060,16 +1060,18 @@ TEST_F(PolicyHandlerTest,
   policy_handler_.OnPendingPermissionChange(kPolicyAppId_);
 }
 
+#ifndef EXTERNAL_PROPRIETARY_MODE
 TEST_F(PolicyHandlerTest, PTExchangeAtUserRequest) {
   // Arrange
   ChangePolicyManagerToMock();
   // Check expectations
-  EXPECT_CALL(*mock_policy_manager_, ForcePTExchange());
-  EXPECT_CALL(mock_message_helper_, SendUpdateSDLResponse(_, _, _)).Times(0);
+  EXPECT_CALL(*mock_policy_manager_, ForcePTExchangeAtUserRequest());
+  EXPECT_CALL(mock_message_helper_, SendUpdateSDLResponse(_, _, _));
   // Act
   const uint32_t correlation_id = 2;
   policy_handler_.PTExchangeAtUserRequest(correlation_id);
 }
+#endif
 
 TEST_F(PolicyHandlerTest, AddDevice) {
   // Arrange
