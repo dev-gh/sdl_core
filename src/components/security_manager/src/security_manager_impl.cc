@@ -114,7 +114,7 @@ void SecurityManagerImpl::set_crypto_manager(CryptoManager* crypto_manager) {
   system_time_handler_->QuerySystemTime();
 }
 
-void SecurityManagerImpl::Handle(const SecurityMessage message) {
+void SecurityManagerImpl::Handle(const SecurityMessage& message) {
   LOG4CXX_AUTO_TRACE(logger_);
   DCHECK(message);
   if (!crypto_manager_) {

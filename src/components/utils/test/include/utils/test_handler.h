@@ -43,7 +43,7 @@ typedef std::queue<bool> BoolQueue;
 typedef threads::MessageLoopThread<BoolQueue> TestLoopThread;
 
 class TestHandler : public TestLoopThread::Handler {
-  virtual void Handle(const BoolQueue::value_type test_value) OVERRIDE {}
+  virtual void Handle(const BoolQueue::value_type& test_value) OVERRIDE {}
 };
 
 }  // namespace utils_test

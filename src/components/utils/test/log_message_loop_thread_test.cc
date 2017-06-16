@@ -59,7 +59,7 @@ TEST(LogMessageLoopThread, DestroyLogMessage_loggerStatusDeletingLogger) {
 
 class MockLogMessageTest : public LogMessageHandler {
  public:
-  MOCK_CONST_METHOD1(Handle, void(const LogMessage message));
+  MOCK_CONST_METHOD1(Handle, void(const LogMessage& message));
 };
 
 TEST(LogMessageLoopThread, HandleNeverCalled) {

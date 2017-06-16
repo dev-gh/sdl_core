@@ -35,7 +35,7 @@
 
 namespace logger {
 
-void LogMessageHandler::Handle(const LogMessage message) {
+void LogMessageHandler::Handle(const LogMessage& message) {
   message.logger->forcedLog(message.level,
                             message.entry,
                             message.timeStamp,

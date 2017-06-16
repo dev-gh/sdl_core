@@ -1297,7 +1297,8 @@ bool ProtocolHandlerImpl::TrackMalformedMessage(const uint32_t& connection_key,
   return false;
 }
 
-void ProtocolHandlerImpl::Handle(const impl::RawFordMessageFromMobile message) {
+void ProtocolHandlerImpl::Handle(
+    const impl::RawFordMessageFromMobile& message) {
   LOG4CXX_AUTO_TRACE(logger_);
 
   switch (message->service_type()) {
@@ -1333,7 +1334,7 @@ void ProtocolHandlerImpl::Handle(const impl::RawFordMessageFromMobile message) {
   }
 }
 
-void ProtocolHandlerImpl::Handle(const impl::RawFordMessageToMobile message) {
+void ProtocolHandlerImpl::Handle(const impl::RawFordMessageToMobile& message) {
   LOG4CXX_DEBUG(logger_,
                 "Message to mobile app: connection id "
                     << static_cast<int>(message->connection_id())

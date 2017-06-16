@@ -111,7 +111,7 @@ const HMIMessageHandlerSettings& HMIMessageHandlerImpl::get_settings() const {
   return settings_;
 }
 
-void HMIMessageHandlerImpl::Handle(const impl::MessageFromHmi message) {
+void HMIMessageHandlerImpl::Handle(const impl::MessageFromHmi& message) {
   LOG4CXX_INFO(logger_, "Received message from hmi");
   sync_primitives::AutoLock lock(observer_locker_);
   if (!observer_) {
@@ -122,7 +122,7 @@ void HMIMessageHandlerImpl::Handle(const impl::MessageFromHmi message) {
   observer_->OnMessageReceived(message);
   LOG4CXX_INFO(logger_, "Message from hmi given away.");
 }
-void HMIMessageHandlerImpl::Handle(const impl::MessageToHmi message) {
+void HMIMessageHandlerImpl::Handle(const impl::MessageToHmi& message) {
   for (std::set<HMIMessageAdapter*>::iterator it = message_adapters_.begin();
        it != message_adapters_.end();
        ++it) {

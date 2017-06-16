@@ -1199,19 +1199,19 @@ class ApplicationManagerImpl
    * of messages. Beware, each is called on different thread!
    */
   // CALLED ON messages_from_mobile_ thread!
-  void Handle(const impl::MessageFromMobile message) OVERRIDE;
+  void Handle(const impl::MessageFromMobile& message) OVERRIDE;
 
   // CALLED ON messages_to_mobile_ thread!
-  void Handle(const impl::MessageToMobile message) OVERRIDE;
+  void Handle(const impl::MessageToMobile& message) OVERRIDE;
 
   // CALLED ON messages_from_hmi_ thread!
-  void Handle(const impl::MessageFromHmi message) OVERRIDE;
+  void Handle(const impl::MessageFromHmi& message) OVERRIDE;
 
   // CALLED ON messages_to_hmi_ thread!
-  void Handle(const impl::MessageToHmi message) OVERRIDE;
+  void Handle(const impl::MessageToHmi& message) OVERRIDE;
 
   // CALLED ON audio_pass_thru_messages_ thread!
-  void Handle(const impl::AudioData message) OVERRIDE;
+  void Handle(const impl::AudioData& message) OVERRIDE;
 
   template <typename ApplicationList>
   void PrepareApplicationListSO(ApplicationList app_list,

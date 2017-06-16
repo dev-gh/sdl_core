@@ -2669,7 +2669,7 @@ void ApplicationManagerImpl::OnAppUnauthorized(const uint32_t& app_id) {
                                     connection_handler::kUnauthorizedApp);
 }
 
-void ApplicationManagerImpl::Handle(const impl::MessageFromMobile message) {
+void ApplicationManagerImpl::Handle(const impl::MessageFromMobile& message) {
   LOG4CXX_AUTO_TRACE(logger_);
 
   if (!message) {
@@ -2684,7 +2684,7 @@ void ApplicationManagerImpl::Handle(const impl::MessageFromMobile message) {
   ProcessMessageFromMobile(message);
 }
 
-void ApplicationManagerImpl::Handle(const impl::MessageToMobile message) {
+void ApplicationManagerImpl::Handle(const impl::MessageToMobile& message) {
   if (!protocol_handler_) {
     LOG4CXX_WARN(logger_,
                  "Protocol Handler is not set; cannot send message to mobile.");
@@ -2718,7 +2718,7 @@ void ApplicationManagerImpl::Handle(const impl::MessageToMobile message) {
   }
 }
 
-void ApplicationManagerImpl::Handle(const impl::MessageFromHmi message) {
+void ApplicationManagerImpl::Handle(const impl::MessageFromHmi& message) {
   LOG4CXX_AUTO_TRACE(logger_);
 
   if (!message) {
@@ -2729,7 +2729,7 @@ void ApplicationManagerImpl::Handle(const impl::MessageFromHmi message) {
   ProcessMessageFromHMI(message);
 }
 
-void ApplicationManagerImpl::Handle(const impl::MessageToHmi message) {
+void ApplicationManagerImpl::Handle(const impl::MessageToHmi& message) {
   LOG4CXX_AUTO_TRACE(logger_);
   if (!hmi_handler_) {
     LOG4CXX_ERROR(logger_, "Observer is not set for HMIMessageHandler");
@@ -2740,7 +2740,7 @@ void ApplicationManagerImpl::Handle(const impl::MessageToHmi message) {
   LOG4CXX_INFO(logger_, "Message for HMI given away");
 }
 
-void ApplicationManagerImpl::Handle(const impl::AudioData message) {
+void ApplicationManagerImpl::Handle(const impl::AudioData& message) {
   LOG4CXX_AUTO_TRACE(logger_);
   smart_objects::SmartObjectSPtr on_audio_pass =
       new smart_objects::SmartObject();

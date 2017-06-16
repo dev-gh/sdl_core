@@ -132,7 +132,7 @@ class SecurityManagerImpl : public SecurityManager,
    * threads::MessageLoopThread<*>::Handler implementations
    * CALLED in SecurityMessageLoop thread
    */
-  void Handle(const SecurityMessage message) OVERRIDE;
+  void Handle(const SecurityMessage& message) OVERRIDE;
 
   /**
    * \brief Create new SSLContext for connection or return exists

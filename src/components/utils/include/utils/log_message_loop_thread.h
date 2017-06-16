@@ -58,7 +58,7 @@ typedef threads::MessageLoopThread<LogMessageQueue>
 
 class LogMessageHandler : public LogMessageLoopThreadTemplate::Handler {
  public:
-  virtual void Handle(const LogMessage message) OVERRIDE;
+  virtual void Handle(const LogMessage& message) OVERRIDE;
 };
 
 class LogMessageLoopThread : public LogMessageLoopThreadTemplate {

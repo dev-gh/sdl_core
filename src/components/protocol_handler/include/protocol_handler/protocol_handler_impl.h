@@ -461,9 +461,9 @@ class ProtocolHandlerImpl
 
   // threads::MessageLoopThread<*>::Handler implementations
   // CALLED ON raw_ford_messages_from_mobile_ thread!
-  void Handle(const impl::RawFordMessageFromMobile message);
+  void Handle(const impl::RawFordMessageFromMobile& message) OVERRIDE;
   // CALLED ON raw_ford_messages_to_mobile_ thread!
-  void Handle(const impl::RawFordMessageToMobile message);
+  void Handle(const impl::RawFordMessageToMobile& message) OVERRIDE;
 
 #ifdef ENABLE_SECURITY
   /**
