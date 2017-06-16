@@ -37,22 +37,22 @@
 
 namespace test {
 namespace components {
-namespace utils_test {
+namespace utils {
 
 using ::utils::StlCollectionDeleter;
 using ::utils::StlMapDeleter;
 
-class TestObject {
+class STLTestObject {
  public:
-  ~TestObject() {}
+  ~STLTestObject() {}
 };
 
-typedef std::map<int, TestObject*> TestMap;
-typedef std::vector<TestObject*> TestVector;
+typedef std::map<int, STLTestObject*> TestMap;
+typedef std::vector<STLTestObject*> TestVector;
 
 TEST(StlDeleter, DestructMapWithOneElement) {
   TestMap test_map;
-  test_map[1] = new TestObject();
+  test_map[1] = new STLTestObject();
 
   EXPECT_EQ(1u, test_map.size());
   { StlMapDeleter<TestMap> test_list_deleter_(&test_map); }
@@ -62,8 +62,8 @@ TEST(StlDeleter, DestructMapWithOneElement) {
 
 TEST(StlDeleter, DestructMapWithSeveralElements) {
   TestMap test_map;
-  test_map[1] = new TestObject();
-  test_map[2] = new TestObject();
+  test_map[1] = new STLTestObject();
+  test_map[2] = new STLTestObject();
 
   EXPECT_EQ(2u, test_map.size());
   { StlMapDeleter<TestMap> test_list_deleter_(&test_map); }
@@ -74,7 +74,7 @@ TEST(StlDeleter, DestructMapWithSeveralElements) {
 
 TEST(StlDeleter, DestructVectorWithOneElement) {
   TestVector test_vector;
-  test_vector.push_back(new TestObject());
+  test_vector.push_back(new STLTestObject());
 
   EXPECT_EQ(1u, test_vector.size());
   { StlCollectionDeleter<TestVector> test_list_deleter_(&test_vector); }
@@ -84,8 +84,8 @@ TEST(StlDeleter, DestructVectorWithOneElement) {
 
 TEST(StlDeleter, DestructVectorWithSeveralElements) {
   TestVector test_vector;
-  test_vector.push_back(new TestObject());
-  test_vector.push_back(new TestObject());
+  test_vector.push_back(new STLTestObject());
+  test_vector.push_back(new STLTestObject());
 
   EXPECT_EQ(2u, test_vector.size());
   { StlCollectionDeleter<TestVector> test_list_deleter_(&test_vector); }
@@ -94,6 +94,6 @@ TEST(StlDeleter, DestructVectorWithSeveralElements) {
   EXPECT_EQ(NULL, test_vector[1]);
 }
 
-}  // namespace utils_test
+}  // namespace utils
 }  // namespace components
 }  // namespace test
