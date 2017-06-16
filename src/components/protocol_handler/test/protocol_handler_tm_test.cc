@@ -567,6 +567,7 @@ TEST_F(ProtocolHandlerImplTest, EndSession_Success) {
 TEST_F(ProtocolHandlerImplTest, SecurityEnable_StartSessionProtocoloV1) {
   ::utils::SharedPtr<TestAsyncWaiter> waiter =
       utils::MakeShared<TestAsyncWaiter>();
+
   uint32_t times = 0;
 
   AddSession(waiter, times);
@@ -574,7 +575,9 @@ TEST_F(ProtocolHandlerImplTest, SecurityEnable_StartSessionProtocoloV1) {
   // Add security manager
   AddSecurityManager();
   const ServiceType start_service = kRpc;
-  // Expect ConnectionHandler check
+  EXPECT_CALL(session_observer_mock,
+              StartService(connection_id, session_id, start_service))
+      .WillOnce(Return(true));
   EXPECT_CALL(
       session_observer_mock,
       OnSessionStartedCallback(
@@ -617,7 +620,6 @@ TEST_F(ProtocolHandlerImplTest, SecurityEnable_StartSessionUnprotected) {
 
   TestAsyncWaiter waiter;
   uint32_t times = 0;
-  // Expect ConnectionHandler check
   EXPECT_CALL(
       session_observer_mock,
       OnSessionStartedCallback(
@@ -650,7 +652,9 @@ TEST_F(ProtocolHandlerImplTest, SecurityEnable_StartSessionProtected_Fail) {
 
   TestAsyncWaiter waiter;
   uint32_t times = 0;
-  // Expect ConnectionHandler check
+  EXPECT_CALL(session_observer_mock,
+              StartService(connection_id, session_id, start_service))
+      .WillOnce(Return(true));
   EXPECT_CALL(
       session_observer_mock,
       OnSessionStartedCallback(
@@ -692,7 +696,9 @@ TEST_F(ProtocolHandlerImplTest,
 
   TestAsyncWaiter waiter;
   uint32_t times = 0;
-  // Expect ConnectionHandler check
+  EXPECT_CALL(session_observer_mock,
+              StartService(connection_id, session_id, start_service))
+      .WillOnce(Return(true));
   EXPECT_CALL(
       session_observer_mock,
       OnSessionStartedCallback(
@@ -747,7 +753,9 @@ TEST_F(ProtocolHandlerImplTest,
 
   TestAsyncWaiter waiter;
   uint32_t times = 0;
-  // Expect ConnectionHandler check
+  EXPECT_CALL(session_observer_mock,
+              StartService(connection_id, session_id, start_service))
+      .WillOnce(Return(true));
   EXPECT_CALL(
       session_observer_mock,
       OnSessionStartedCallback(
@@ -827,7 +835,9 @@ TEST_F(ProtocolHandlerImplTest,
 
   TestAsyncWaiter waiter;
   uint32_t times = 0;
-  // Expect ConnectionHandler check
+  EXPECT_CALL(session_observer_mock,
+              StartService(connection_id, session_id, start_service))
+      .WillOnce(Return(true));
   EXPECT_CALL(
       session_observer_mock,
       OnSessionStartedCallback(
@@ -912,7 +922,9 @@ TEST_F(
 
   TestAsyncWaiter waiter;
   uint32_t times = 0;
-  // Expect ConnectionHandler check
+  EXPECT_CALL(session_observer_mock,
+              StartService(connection_id, session_id, start_service))
+      .WillOnce(Return(true));
   EXPECT_CALL(
       session_observer_mock,
       OnSessionStartedCallback(
@@ -995,7 +1007,9 @@ TEST_F(ProtocolHandlerImplTest,
 
   TestAsyncWaiter waiter;
   uint32_t times = 0;
-  // Expect ConnectionHandler check
+  EXPECT_CALL(session_observer_mock,
+              StartService(connection_id, session_id, start_service))
+      .WillOnce(Return(true));
   EXPECT_CALL(
       session_observer_mock,
       OnSessionStartedCallback(
