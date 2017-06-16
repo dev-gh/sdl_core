@@ -326,12 +326,11 @@ void PolicyManagerImpl::StartPTExchange() {
     if (update_status_manager_.IsUpdateRequired()) {
       if (RequestPTUpdate() && !timer_retry_sequence_.is_running()) {
         // Start retry sequency
-        current_retry_sequence_timeout_ = NextRetryTimeout();
         LOG4CXX_DEBUG(logger_,
-                      "Start retry sequence timeout = "
-                          << current_retry_sequence_timeout_);
-        timer_retry_sequence_.Start(current_retry_sequence_timeout_,
-                                    timer::kPeriodic);
+                      "Start waiting for PTU result for (ms): "
+                          << retry_sequence_timeout_);
+        timer_retry_sequence_.Start(retry_sequence_timeout_,
+                                    timer::kSingleShot);
       }
     }
   }
@@ -812,25 +811,23 @@ std::string PolicyManagerImpl::GetPolicyTableStatus() const {
 uint32_t PolicyManagerImpl::NextRetryTimeout() {
   sync_primitives::AutoLock auto_lock(retry_sequence_lock_);
   LOG4CXX_DEBUG(logger_, "Index: " << retry_sequence_index_);
-  uint32_t next = 0u;
-  if (retry_sequence_seconds_.empty() ||
-      retry_sequence_index_ > retry_sequence_seconds_.size()) {
-    return next;
+  if (retry_sequence_seconds_.empty()) {
+    return 0u;
   }
 
+  if (retry_sequence_index_ >= retry_sequence_seconds_.size()) {
+    return 0u;
+  }
+
+  uint32_t next_timeout = 0u;
   ++retry_sequence_index_;
 
   for (uint32_t i = 0u; i < retry_sequence_index_; ++i) {
-    next += retry_sequence_seconds_[i];
-    // According to requirement APPLINK-18244
-    next += retry_sequence_timeout_;
-  }
-  if (retry_sequence_index_ == retry_sequence_seconds_.size()) {
-    retry_sequence_timeout_ = 1;
+    next_timeout += retry_sequence_seconds_[i];
+    next_timeout += retry_sequence_timeout_;
   }
 
-  // Return miliseconds
-  return next;
+  return next_timeout;
 }
 
 void PolicyManagerImpl::RefreshRetrySequence() {
@@ -1125,13 +1122,14 @@ void PolicyManagerImpl::set_cache_manager(
 }
 
 void PolicyManagerImpl::RetrySequence() {
-  LOG4CXX_INFO(logger_, "Start new retry sequence");
-  current_retry_sequence_timeout_ = NextRetryTimeout();
-
-  LOG4CXX_INFO(
-      logger_,
-      "current_retry_sequence_timeout_ = " << current_retry_sequence_timeout_);
   update_status_manager_.OnUpdateTimeoutOccurs();
+
+  LOG4CXX_INFO(logger_, "Start new retry sequence");
+
+  current_retry_sequence_timeout_ = NextRetryTimeout();
+  LOG4CXX_INFO(logger_,
+               "Retry timeout to wait for next retry: "
+                   << current_retry_sequence_timeout_);
   if (!current_retry_sequence_timeout_ && timer_retry_sequence_.is_running()) {
     timer_retry_sequence_.Stop();
     const std::string empty_certificate;
