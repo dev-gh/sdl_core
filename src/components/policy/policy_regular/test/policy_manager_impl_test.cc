@@ -773,7 +773,8 @@ TEST_F(PolicyManagerImplTest, LoadPT_SetInvalidUpdatePT_PTIsNotLoaded) {
   EXPECT_CALL(*cache_manager, SaveUpdateRequired(false)).Times(0);
   EXPECT_CALL(*cache_manager, TimeoutResponse()).Times(0);
   EXPECT_CALL(*cache_manager, SecondsBetweenRetries(_)).Times(0);
-  EXPECT_FALSE(manager->LoadPT("file_pt_update.json", msg));
+  // Invalid PTU considered as non-triggering the PTU so 'true' is returned
+  EXPECT_TRUE(manager->LoadPT("file_pt_update.json", msg));
 }
 
 TEST_F(PolicyManagerImplTest2,
@@ -899,33 +900,27 @@ TEST_F(PolicyManagerImplTest2, NextRetryTimeout_ExpectTimeoutsFromPT) {
   std::ifstream ifile("sdl_preloaded_pt.json");
   Json::Reader reader;
   Json::Value root(Json::objectValue);
-  if (ifile.is_open() && reader.parse(ifile, root, true)) {
-    Json::Value seconds_between_retries = Json::Value(Json::arrayValue);
-    seconds_between_retries =
-        root["policy_table"]["module_config"]["seconds_between_retries"];
-    CreateLocalPT("sdl_preloaded_pt.json");
-    // Check data
-    uint32_t timeout_after_x_seconds =
-        root["policy_table"]["module_config"]["timeout_after_x_seconds"]
-            .asInt() *
-        date_time::DateTime::MILLISECONDS_IN_SECOND;
-    const uint32_t first_retry = timeout_after_x_seconds;
-    EXPECT_EQ(first_retry, manager->NextRetryTimeout());
-    uint32_t next_retry = first_retry +
-                          seconds_between_retries[0].asInt() *
-                              date_time::DateTime::MILLISECONDS_IN_SECOND;
-    EXPECT_EQ(next_retry, manager->NextRetryTimeout());
-    next_retry = first_retry + next_retry +
-                 seconds_between_retries[1].asInt() *
+  EXPECT_TRUE(ifile.is_open() && reader.parse(ifile, root, true));
+
+  Json::Value seconds_between_retries = Json::Value(Json::arrayValue);
+  seconds_between_retries =
+      root["policy_table"]["module_config"]["seconds_between_retries"];
+  CreateLocalPT("sdl_preloaded_pt.json");
+  // Check data
+  const uint32_t timeout_after_x_seconds =
+      root["policy_table"]["module_config"]["timeout_after_x_seconds"].asInt();
+
+  std::vector<int> v;
+  for (uint16_t i = 0; i < seconds_between_retries.size(); ++i) {
+    v.push_back(seconds_between_retries[i].asInt());
+  }
+
+  uint32_t next_retry = 0;
+  for (uint16_t i = 0; i < v.size(); ++i) {
+    next_retry = next_retry +
+                 (timeout_after_x_seconds + v[i]) *
                      date_time::DateTime::MILLISECONDS_IN_SECOND;
-    EXPECT_EQ(next_retry, manager->NextRetryTimeout());
-    next_retry = first_retry + next_retry +
-                 seconds_between_retries[2].asInt() *
-                     date_time::DateTime::MILLISECONDS_IN_SECOND;
-    EXPECT_EQ(next_retry, manager->NextRetryTimeout());
-    next_retry = first_retry + next_retry +
-                 seconds_between_retries[3].asInt() *
-                     date_time::DateTime::MILLISECONDS_IN_SECOND;
+
     EXPECT_EQ(next_retry, manager->NextRetryTimeout());
   }
 }
