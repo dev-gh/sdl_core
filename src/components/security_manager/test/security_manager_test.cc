@@ -46,6 +46,7 @@
 #include "security_manager/mock_crypto_manager.h"
 #include "security_manager/mock_security_manager_listener.h"
 #include "utils/system_time_handler.h"
+#include "utils/test_async_waiter.h"
 
 namespace test {
 namespace components {
@@ -71,6 +72,8 @@ uint8_t handshake_data_out[] = {0x6, 0x7, 0x8};
 uint8_t* handshake_data_out_pointer = handshake_data_out;
 const size_t handshake_data_out_size =
     sizeof(handshake_data_out) / sizeof(handshake_data_out[0]);
+const uint32_t kAsyncExpectationsTimeout = 1000u;
+
 using ::security_manager::SecurityQuery;
 using security_manager_test::InternalErrorWithErrId;
 using ::testing::Return;
@@ -309,6 +312,8 @@ TEST_F(SecurityManagerTest, SecurityManager_NULLCryptoManager) {
                                           SecurityQuery::INVALID_QUERY_ID);
   const uint8_t data = 0;
   EmulateMobileMessage(header, &data, 1);
+  TestAsyncWaiter waiter;
+  waiter.WaitFor(1, kAsyncExpectationsTimeout);
 }
 /*
  * Shall skip all OnMobileMessageSent
@@ -681,6 +686,8 @@ TEST_F(SecurityManagerTest, ProcessPostponedHandshake_InitComplete) {
   EXPECT_CALL(mock_ssl_context_exists, ResetConnection());
 
   security_manager_->OnCertificateUpdated(certificate_data);
+  TestAsyncWaiter waiter;
+  waiter.WaitFor(1, kAsyncExpectationsTimeout);
 }
 /*
  * Shall send InternallError on
@@ -705,6 +712,8 @@ TEST_F(SecurityManagerTest, ProccessHandshakeData_WrongDataSize) {
           is_final));
 
   EmulateMobileMessageHandshake(NULL, 0);
+  TestAsyncWaiter waiter;
+  waiter.WaitFor(1, kAsyncExpectationsTimeout);
 }
 /*
  * Shall send InternallError on
@@ -739,6 +748,8 @@ TEST_F(SecurityManagerTest, ProccessHandshakeData_ServiceNotProtected) {
 
   const uint8_t data[] = {0x1, 0x2};
   EmulateMobileMessageHandshake(data, sizeof(data) / sizeof(data[0]));
+  TestAsyncWaiter waiter;
+  waiter.WaitFor(1, kAsyncExpectationsTimeout);
 }
 /*
  * Shall send InternallError on getting
@@ -808,6 +819,8 @@ TEST_F(SecurityManagerTest, ProccessHandshakeData_InvalidData) {
   // Emulate handshare #handshake_emulates times for 5 cases
   EmulateMobileMessageHandshake(
       handshake_data, handshake_data_size, handshake_emulates);
+  TestAsyncWaiter waiter;
+  waiter.WaitFor(1, kAsyncExpectationsTimeout);
 }
 /*
  * Shall send CertExpired on getting
@@ -859,6 +872,8 @@ TEST_F(SecurityManagerTest, ProccessHandshakeData_HandshakeExpiredCert) {
 
   // Expect NO InternalError with ERROR_ID
   EmulateMobileMessageHandshake(handshake_data, handshake_data_size);
+  TestAsyncWaiter waiter;
+  waiter.WaitFor(1, kAsyncExpectationsTimeout);
 }
 /*
  * Shall send HandshakeData on getting SEND_HANDSHAKE_DATA from mobile side
@@ -923,6 +938,8 @@ TEST_F(SecurityManagerTest, ProccessHandshakeData_Answer) {
 
   EmulateMobileMessageHandshake(
       handshake_data, handshake_data_size, handshake_emulates);
+  TestAsyncWaiter waiter;
+  waiter.WaitFor(1, kAsyncExpectationsTimeout);
 }
 /*
  * Shall call all listeners on success end handshake
@@ -1002,6 +1019,8 @@ TEST_F(SecurityManagerTest, ProccessHandshakeData_HandshakeFinished) {
   // Expect NO InternalError with ERROR_ID
   EmulateMobileMessageHandshake(
       handshake_data, handshake_data_size, handshake_emulates);
+  TestAsyncWaiter waiter;
+  waiter.WaitFor(1, kAsyncExpectationsTimeout);
 }
 /*
  * Shall not any query on getting empty SEND_INTERNAL_ERROR
