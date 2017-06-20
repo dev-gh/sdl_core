@@ -1132,6 +1132,7 @@ void PolicyManagerImpl::RetrySequence() {
                "Retry timeout to wait for next retry: "
                    << current_retry_sequence_timeout_);
   if (!current_retry_sequence_timeout_ && timer_retry_sequence_.is_running()) {
+    LOG4CXX_INFO(logger_, "Retry attempts failed. Stopping retry sequence.");
     timer_retry_sequence_.Stop();
     const std::string empty_certificate;
     listener_->OnCertificateUpdated(empty_certificate);
