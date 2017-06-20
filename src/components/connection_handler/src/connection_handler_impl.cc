@@ -330,6 +330,16 @@ protocol_handler::CreationStatus ConnectionHandlerImpl::IsServiceAllowedToStart(
       return protocol_handler::CreationStatus::DISALLOWED;
 #endif  // ENABLE_SECURITY
     } else {
+      sync_primitives::AutoReadLock read_lock(
+          connection_handler_observer_lock_);
+      if (!connection_handler_observer_) {
+        return protocol_handler::CreationStatus::DISALLOWED;
+      }
+      const uint32_t session_key = KeyFromPair(connection_handle, session_id);
+      if (!connection_handler_observer_->IsServiceAllowed(session_key,
+                                                          service_type)) {
+        return protocol_handler::CreationStatus::DISALLOWED;
+      }
       return protocol_handler::CreationStatus::ALLOWED;
     }
   }

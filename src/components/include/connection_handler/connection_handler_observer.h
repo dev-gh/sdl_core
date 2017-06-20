@@ -108,7 +108,21 @@ class ConnectionHandlerObserver {
 #ifdef ENABLE_SECURITY
   virtual security_manager::SSLContext::HandshakeContext GetHandshakeContext(
       uint32_t key) const = 0;
+
 #endif  // ENABLE_SECURITY
+
+  /**
+   * @brief IsServiceAllowed checks whether service is allowed for specific
+   * session as that may be dependent on some information known for high level
+   * component only
+   * @param session_key Session key
+   * @param service Service
+   * @return True if service allowed, otherwise - false
+   */
+  virtual bool IsServiceAllowed(
+      const uint32_t session_key,
+      const protocol_handler::ServiceType service) const = 0;
+
  protected:
   /**
    * \brief Destructor

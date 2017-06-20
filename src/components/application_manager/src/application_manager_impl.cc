@@ -1297,6 +1297,38 @@ ApplicationManagerImpl::GetHandshakeContext(uint32_t key) const {
   return res.make_context(custom_str::CustomString(app->policy_app_id()),
                           app->name());
 }
+
+bool ApplicationManagerImpl::IsServiceAllowed(
+    const uint32_t session_key,
+    const protocol_handler::ServiceType service) const {
+  using namespace helpers;
+  using namespace protocol_handler;
+  LOG4CXX_AUTO_TRACE(logger_);
+  LOG4CXX_DEBUG(logger_,
+                "ServiceType = " << service << ". Session = " << std::hex
+                                 << session_key);
+
+  if (!Compare<ServiceType, EQ, ONE>(
+          service, ServiceType::kMobileNav, ServiceType::kAudio)) {
+    LOG4CXX_DEBUG(logger_, "Service allowed.");
+    return true;
+  }
+
+  ApplicationSharedPtr app = application(session_key);
+  if (!app) {
+    LOG4CXX_WARN(logger_,
+                 "The application with id:" << session_key
+                                            << " doesn't exists.");
+    return false;
+  }
+
+  if (app->is_navi()) {
+    LOG4CXX_DEBUG(logger_, "Service allowed.");
+    return true;
+  }
+
+  return false;
+}
 #endif  // ENABLE_SECURITY
 
 void ApplicationManagerImpl::set_hmi_message_handler(

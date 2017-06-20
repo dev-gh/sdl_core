@@ -807,7 +807,19 @@ class ApplicationManagerImpl
 
   security_manager::SSLContext::HandshakeContext GetHandshakeContext(
       uint32_t key) const OVERRIDE;
+
 #endif  // ENABLE_SECURITY
+        /**
+         * @brief IsServiceAllowed checks whether service is allowed for specific
+         * session as that depends on application type e.g. non-navi application are
+         * not allowed to use navi services
+         * @param session_key Session key
+         * @param service Service
+         * @return True if service allowed, otherwise - false
+         */
+  bool IsServiceAllowed(
+      const uint32_t session_key,
+      const protocol_handler::ServiceType service) const OVERRIDE;
 
   /**
    * @ Add notification to collection
