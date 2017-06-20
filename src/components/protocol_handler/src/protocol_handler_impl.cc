@@ -1128,6 +1128,11 @@ RESULT_CODE ProtocolHandlerImpl::HandleControlMessageStartSession(
 
       if (!session_observer_.StartService(
               connection_id, session_id, service_type)) {
+        SendStartSessionNAck(connection_id,
+                             packet.session_id(),
+                             protocol_version,
+                             packet.service_type());
+
         return RESULT_FAIL;
       }
 
@@ -1146,6 +1151,11 @@ RESULT_CODE ProtocolHandlerImpl::HandleControlMessageStartSession(
 
       if (!session_observer_.StartService(
               connection_id, session_id, service_type)) {
+        SendStartSessionNAck(connection_id,
+                             packet.session_id(),
+                             protocol_version,
+                             packet.service_type());
+
         return RESULT_FAIL;
       }
 
