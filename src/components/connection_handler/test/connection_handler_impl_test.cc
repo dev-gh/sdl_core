@@ -271,7 +271,6 @@ TEST_F(ConnectionHandlerTest, StartSession_NoConnection) {
       uid_, sessionID, kRpc, PROTECTION_ON, &out_hash_id_);
   // Unknown connection error is '0'
   EXPECT_EQ(0u, result_fail);
-  EXPECT_EQ(protocol_handler::HASH_ID_WRONG, out_hash_id_);
   ASSERT_TRUE(connection_handler_->getConnectionList().empty());
 }
 
@@ -1136,23 +1135,8 @@ TEST_F(ConnectionHandlerTest,
   // Start new session with RPC service
   const uint32_t session_id_fail =
       connection_handler_->OnSessionStartedCallback(
-          //<<<<<<< HEAD
-          //          uid_, 0, kRpc, PROTECTION_OFF, &out_hash_id_);
-          //#ifdef ENABLE_SECURITY
-          //  EXPECT_EQ(0u, session_id_fail);
-          //  EXPECT_EQ(protocol_handler::HASH_ID_WRONG, out_hash_id_);
-          //#else
-          //  EXPECT_EQ(1u, session_id_fail);
-          //  EXPECT_EQ(SessionHash(uid_, session_id_fail), out_hash_id_);
-          //#endif  // ENABLE_SECURITY
-          //=======
-          uid_,
-          0,
-          kRpc,
-          PROTECTION_OFF,
-          &out_hash_id_);
+          uid_, 0, kRpc, PROTECTION_OFF, &out_hash_id_);
   EXPECT_EQ(1u, session_id_fail);
-  //>>>>>>> ae24205... Enable starting of secure service if unsecured is started
 
   // Allow start kRPC without encryption
   protected_services_.clear();
@@ -1179,18 +1163,7 @@ TEST_F(ConnectionHandlerTest,
   // Start new session with RPC service
   const uint32_t session_id_fail =
       connection_handler_->OnSessionStartedCallback(
-          //<<<<<<< HEAD
-          //          uid_, 0, kRpc, PROTECTION_ON, NULL);
-          //#ifdef ENABLE_SECURITY
-          //  EXPECT_EQ(0u, session_id_fail);
-          //#else
-          //=======
-          uid_,
-          0,
-          kRpc,
-          PROTECTION_ON,
-          &out_hash_id_);
-  //>>>>>>> ae24205... Enable starting of secure service if unsecured is started
+          uid_, 0, kRpc, PROTECTION_ON, &out_hash_id_);
   EXPECT_EQ(1u, session_id_fail);
 
   // Allow start kRPC with encryption
@@ -1220,18 +1193,7 @@ TEST_F(ConnectionHandlerTest,
   SetSpecificServices();
   // Start new session with Audio service
   const uint32_t session_id2 = connection_handler_->OnSessionStartedCallback(
-      //<<<<<<< HEAD
-      //      uid_, start_session_id_, kAudio, PROTECTION_OFF, NULL);
-      //#ifdef ENABLE_SECURITY
-      //  EXPECT_EQ(0u, session_id2);
-      //#else
-      //=======
-      uid_,
-      start_session_id_,
-      kAudio,
-      PROTECTION_OFF,
-      &out_hash_id_);
-  //>>>>>>> ae24205... Enable starting of secure service if unsecured is started
+      uid_, start_session_id_, kAudio, PROTECTION_OFF, &out_hash_id_);
   EXPECT_EQ(1u, session_id2);
   // Allow start kAudio without encryption
   protected_services_.clear();
@@ -1267,18 +1229,7 @@ TEST_F(ConnectionHandlerTest,
   // Start new session with Audio service
   const uint32_t session_id_reject =
       connection_handler_->OnSessionStartedCallback(
-          //<<<<<<< HEAD
-          //          uid_, start_session_id_, kAudio, PROTECTION_ON, NULL);
-          //#ifdef ENABLE_SECURITY
-          //  EXPECT_EQ(0u, session_id_reject);
-          //#else
-          //=======
-          uid_,
-          start_session_id_,
-          kAudio,
-          PROTECTION_ON,
-          &out_hash_id_);
-  //>>>>>>> ae24205... Enable starting of secure service if unsecured is started
+          uid_, start_session_id_, kAudio, PROTECTION_ON, &out_hash_id_);
   EXPECT_EQ(1u, session_id_reject);
   // Allow start kAudio with encryption
   unprotected_services_.clear();
@@ -1327,14 +1278,9 @@ TEST_F(ConnectionHandlerTest, SessionStarted_DealyProtect) {
   const uint32_t session_id3 = connection_handler_->OnSessionStartedCallback(
       uid_, start_session_id_, kAudio, PROTECTION_ON, &out_hash_id_);
 #ifdef ENABLE_SECURITY
-  //<<<<<<< HEAD
-  //  EXPECT_EQ(start_session_id_, session_id3);
-  //  EXPECT_EQ(protocol_handler::HASH_ID_NOT_SUPPORTED, out_hash_id_);
-  //=======
   // Must be the same as the previous id because we attempt to start a secure
   // service of already started unsecured service
   EXPECT_EQ(session_id2, session_id3);
-  //>>>>>>> ae24205... Enable starting of secure service if unsecured is started
   CheckService(uid_, start_session_id_, kAudio, NULL, PROTECTION_ON);
 #else
   EXPECT_EQ(0u, session_id3);
