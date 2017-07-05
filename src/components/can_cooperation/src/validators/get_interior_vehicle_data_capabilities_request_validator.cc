@@ -66,11 +66,6 @@ ValidationResult GetInteriorVehicleDataCapabilitiesRequestValidator::Validate(
     return result;
   }
 
-  if (IsMember(json, kZone)) {
-    result = InteriorZoneValidator::instance()->Validate(json[kZone],
-                                                         outgoing_json[kZone]);
-  }
-
   return result;
 }
 
