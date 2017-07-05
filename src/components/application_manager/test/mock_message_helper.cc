@@ -244,7 +244,6 @@ mobile_api::DeviceRank::eType MessageHelper::StringToDeviceRank(
 }
 #endif  // SDL_REMOTE_CONTROL
 
-
 void MessageHelper::SendUpdateSDLResponse(const std::string& result,
                                           uint32_t correlation_id,
                                           ApplicationManager& app_mngr) {

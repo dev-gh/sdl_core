@@ -56,7 +56,8 @@ class HMIMessageHandler : public HMIMessageObserver, public HMIMessageSender {
    * @brief Subscribes to notification from HMI
    * @param hmi_notification string with notification name
    */
-  virtual void SubscribeToHMINotification(const std::string& hmi_notification) = 0;
+  virtual void SubscribeToHMINotification(
+      const std::string& hmi_notification) = 0;
 #endif  // SDL_REMOTE_CONTROL
 
   /**

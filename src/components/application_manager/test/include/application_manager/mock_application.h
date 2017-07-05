@@ -285,8 +285,9 @@ class MockApplication : public ::application_manager::Application {
   MOCK_CONST_METHOD0(PackageName, std::string());
 
 #ifdef SDL_REMOTE_CONTROL
-  MOCK_METHOD1(set_system_context,
-               void(const application_manager::mobile_api::SystemContext::eType&));
+  MOCK_METHOD1(
+      set_system_context,
+      void(const application_manager::mobile_api::SystemContext::eType&));
   MOCK_METHOD1(
       set_audio_streaming_state,
       void(const application_manager::mobile_api::AudioStreamingState::eType&
@@ -310,7 +311,6 @@ class MockApplication : public ::application_manager::Application {
   MOCK_CONST_METHOD0(SubscribesIVI, const std::set<uint32_t>&());
 
 #endif  // SDL_REMOTE_CONTROL
-
 };
 
 }  // namespace application_manager_test

@@ -2007,7 +2007,6 @@ TypeAccess PolicyManagerImpl::CheckDriverConsent(
   }
 
   return access_remote_->Check(who, what);
-
 }
 
 void PolicyManagerImpl::SetAccess(const PTString& dev_id,

@@ -1911,7 +1911,6 @@ bool PolicyHandler::IsUrlAppIdValid(const uint32_t app_idx,
   return ((is_registered && !is_empty_urls) || is_default);
 }
 
-
 #ifdef SDL_REMOTE_CONTROL
 
 std::vector<std::string> PolicyHandler::GetDevicesIds(

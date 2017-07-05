@@ -67,8 +67,7 @@ class MockService : public Service {
                     const std::string& module,
                     bool allowed));
   MOCK_METHOD1(ResetAccess, void(const ApplicationId& app_id));
-  MOCK_METHOD1(ResetAccess,
-               void(const std::string& module));
+  MOCK_METHOD1(ResetAccess, void(const std::string& module));
   MOCK_METHOD1(GetDeviceHandlerById, uint32_t(const std::string& device_id));
   MOCK_METHOD1(SetPrimaryDevice, void(const uint32_t dev_id));
   MOCK_METHOD0(ResetPrimaryDevice, void());

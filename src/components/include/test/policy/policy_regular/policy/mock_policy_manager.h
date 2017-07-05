@@ -169,8 +169,7 @@ class MockPolicyManager : public PolicyManager {
                     bool allowed));
   MOCK_METHOD2(ResetAccess,
                void(const PTString& dev_id, const PTString& app_id));
-  MOCK_METHOD1(ResetAccess,
-               void(const PTString& module));
+  MOCK_METHOD1(ResetAccess, void(const PTString& module));
   MOCK_METHOD1(SetPrimaryDevice, void(const PTString& dev_id));
   MOCK_METHOD0(ResetPrimaryDevice, void());
   MOCK_CONST_METHOD0(PrimaryDevice, PTString());

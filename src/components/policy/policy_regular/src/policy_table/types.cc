@@ -166,13 +166,14 @@ ApplicationParams::ApplicationParams(const Json::Value* value__)
     , RequestType(impl::ValueMember(value__, "RequestType"))
     , memory_kb(impl::ValueMember(value__, "memory_kb"), 0)
     , heart_beat_timeout_ms(impl::ValueMember(value__, "heart_beat_timeout_ms"))
-    , certificate(impl::ValueMember(value__, "certificate"), "not_specified") 
+    , certificate(impl::ValueMember(value__, "certificate"), "not_specified")
 #ifdef SDL_REMOTE_CONTROL
     , groups_primaryRC(impl::ValueMember(value__, "groups_primaryRC"))
     , groups_nonPrimaryRC(impl::ValueMember(value__, "groups_nonPrimaryRC"))
     , moduleType(impl::ValueMember(value__, "moduleType"))
 #endif  // SDL_REMOTE_CONTROL
-{}
+{
+}
 
 Json::Value ApplicationParams::ToJsonValue() const {
   Json::Value result__(PolicyBase::ToJsonValue());

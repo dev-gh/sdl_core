@@ -166,7 +166,7 @@ bool ApplicationParams::ValidateModuleTypes() const {
   }
   return true;
 }
-#endif // SDL_REMOTE_CONTROL
+#endif  // SDL_REMOTE_CONTROL
 
 bool ApplicationParams::Validate() const {
   if (is_initialized()) {

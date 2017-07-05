@@ -171,7 +171,6 @@ bool AccessRemoteImpl::CheckModuleType(const PTString& app_id,
   return std::find(modules.begin(), modules.end(), module) != modules.end();
 }
 
-
 bool AccessRemoteImpl::IsAllowed(const policy_table::AccessModules& modules,
                                  const std::string& module_name,
                                  const std::string& rpc_name,

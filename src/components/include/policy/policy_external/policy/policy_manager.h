@@ -585,7 +585,6 @@ class PolicyManager : public usage_statistics::StatisticsManager {
    */
   virtual PTString PrimaryDevice() const = 0;
 
-
   /**
    * Sets mode of remote control (on/off)
    * @param enabled true if remote control is turned on

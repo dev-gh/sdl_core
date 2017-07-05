@@ -324,7 +324,6 @@ class CacheManager : public CacheManagerInterface {
    */
   bool GetDefaultHMI(const std::string& app_id, std::string& default_hmi) const;
 
-
   /**
    * Gets HMI types from specific policy
    * @param app_id ID application

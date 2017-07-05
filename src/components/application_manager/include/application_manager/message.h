@@ -92,7 +92,8 @@ class Message {
   size_t payload_size() const;
   const smart_objects::SmartObject& smart_object() const;
 
-  //! --------------------------------------------------------------------------.
+  //!
+  //--------------------------------------------------------------------------.
   void set_function_id(int32_t id);
 #ifdef SDL_REMOTE_CONTROL
   void set_function_name(const std::string& name);
@@ -112,7 +113,7 @@ class Message {
   }
 
  private:
-  int32_t function_id_;     // @remark protocol V2.  
+  int32_t function_id_;     // @remark protocol V2.
   int32_t correlation_id_;  // @remark protocol V2.
   MessageType type_;        // @remark protocol V2.
 #ifdef SDL_REMOTE_CONTROL

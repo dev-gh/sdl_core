@@ -43,20 +43,19 @@ namespace hmi_message_handler {
  * SDL with HMI has to implement this interface.
  */
 class HMIMessageAdapter : public HMIMessageSender {
-
-public:
- /**
-  * \brief Destructor
-  */
- virtual ~HMIMessageAdapter() {}
+ public:
+  /**
+   * \brief Destructor
+   */
+  virtual ~HMIMessageAdapter() {}
 
 #ifdef SDL_REMOTE_CONTROL
- /**
-  * @brief Subscribes to notification from HMI
-  * @param hmi_notification string with notification name
-  */
- virtual void SubscribeToHMINotification(
-     const std::string& hmi_notification) = 0;
+  /**
+   * @brief Subscribes to notification from HMI
+   * @param hmi_notification string with notification name
+   */
+  virtual void SubscribeToHMINotification(
+      const std::string& hmi_notification) = 0;
 #endif  // SDL_REMOTE_CONTROL
 
  protected:
@@ -69,8 +68,6 @@ public:
    * from HMI.
    */
   virtual void SubscribeTo() = 0;
-
-
 };
 
 }  // namespace hmi_message_handler

@@ -46,5 +46,4 @@ TEST(VehicleCapabilities, GetCapabilities) {
   ASSERT_TRUE(6 == caps.capabilities().size());
 }
 
-
 }  // namespace can_cooperation

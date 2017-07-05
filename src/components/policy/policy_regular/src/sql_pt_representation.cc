@@ -1726,8 +1726,7 @@ bool SQLPTRepresentation::SaveModuleType(
 }
 
 bool SQLPTRepresentation::SaveAccessModule(
-    TypeAccess access,
-    const policy_table::AccessModules& modules) {
+    TypeAccess access, const policy_table::AccessModules& modules) {
   LOG4CXX_AUTO_TRACE(logger_);
   utils::dbms::SQLQuery query(db());
   if (!query.Prepare(sql_pt::kInsertAccessModule)) {
@@ -1758,8 +1757,7 @@ bool SQLPTRepresentation::SaveAccessModule(
 }
 
 bool SQLPTRepresentation::GatherAccessModule(
-    TypeAccess access,
-    policy_table::AccessModules* modules) const {
+    TypeAccess access, policy_table::AccessModules* modules) const {
   LOG4CXX_AUTO_TRACE(logger_);
   utils::dbms::SQLQuery query(db());
   if (!query.Prepare(sql_pt::kSelectAccessModules)) {

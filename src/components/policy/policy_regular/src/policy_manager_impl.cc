@@ -89,7 +89,8 @@ PolicyManagerImpl::PolicyManagerImpl()
     , retry_sequence_url_(0, 0, "")
     , wrong_ptu_update_received_(false)
     , send_on_update_sent_out_(false)
-    , trigger_ptu_(false) {}
+    , trigger_ptu_(false) {
+}
 
 void PolicyManagerImpl::set_listener(PolicyListener* listener) {
   listener_ = listener;
@@ -1238,8 +1239,7 @@ TypeAccess PolicyManagerImpl::CheckDriverConsent(
     return TypeAccess::kDisallowed;
   }
 
-    return access_remote_->Check(who, what);
-
+  return access_remote_->Check(who, what);
 }
 
 void PolicyManagerImpl::SetAccess(const PTString& dev_id,

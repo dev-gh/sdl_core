@@ -50,4 +50,4 @@ class MockAppStopwatch : public usage_statistics::AppStopwatch {
 }  // namespace components
 }  // namespace test
 
-#endif  //SRC_COMPONENTS_POLICY_POLICY_EXTERNAL_TEST_INCLUDE_POLICY_MOCK_APP_STOPWATCH_H_
+#endif  // SRC_COMPONENTS_POLICY_POLICY_EXTERNAL_TEST_INCLUDE_POLICY_MOCK_APP_STOPWATCH_H_

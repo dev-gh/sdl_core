@@ -185,7 +185,6 @@ class AccessRemote {
   virtual bool CheckModuleType(const PTString& app_id,
                                policy_table::ModuleType module) const = 0;
 
-
   /**
    * Sets HMI types if application has default policy permissions
    * @param who subject

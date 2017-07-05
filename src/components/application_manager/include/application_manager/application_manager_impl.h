@@ -328,7 +328,6 @@ class ApplicationManagerImpl
   virtual void SendPostMessageToHMI(const MessagePtr& message) OVERRIDE;
 #endif  // SDL_REMOTE_CONTROL
 
-
   /**
    * @brief Checks if application with the same HMI type
    *        (media, voice communication or navi) exists

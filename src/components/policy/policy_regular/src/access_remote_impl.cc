@@ -290,7 +290,8 @@ const policy_table::AppHMITypes& AccessRemoteImpl::HmiTypes(
   if (cache_->IsDefaultPolicy(who.app_id)) {
     return hmi_types_[who];
   } else {
-    return *cache_->pt()->policy_table.app_policies_section.apps[who.app_id]
+    return *cache_->pt()
+                ->policy_table.app_policies_section.apps[who.app_id]
                 .AppHMIType;
   }
 }
@@ -299,10 +300,12 @@ const policy_table::Strings& AccessRemoteImpl::GetGroups(const Subject& who) {
   LOG4CXX_AUTO_TRACE(logger_);
   if (IsAppReverse(who)) {
     if (IsPrimaryDevice(who.dev_id)) {
-      return *cache_->pt()->policy_table.app_policies_section.apps[who.app_id]
+      return *cache_->pt()
+                  ->policy_table.app_policies_section.apps[who.app_id]
                   .groups_primaryRC;
     } else if (IsEnabled()) {
-      return *cache_->pt()->policy_table.app_policies_section.apps[who.app_id]
+      return *cache_->pt()
+                  ->policy_table.app_policies_section.apps[who.app_id]
                   .groups_nonPrimaryRC;
     } else {
       return cache_->GetGroups(kPreConsentPassengersRC);

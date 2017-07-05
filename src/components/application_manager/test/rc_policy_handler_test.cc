@@ -252,9 +252,7 @@ TEST_F(RCPolicyHandlerTest, OnUpdateHMILevel_HmiLevelChanged_SUCCESS) {
   EXPECT_CALL(app_manager_,
               ChangeAppsHMILevel(kAppId1_, mobile_apis::HMILevel::HMI_LIMITED));
 
-  EXPECT_CALL(mock_message_helper_,
-              SendHMIStatusNotification(
-                  _, _));
+  EXPECT_CALL(mock_message_helper_, SendHMIStatusNotification(_, _));
 
   policy_handler_.OnUpdateHMILevel(kDeviceId_, kPolicyAppId_, hmi_level);
 }
@@ -504,9 +502,7 @@ TEST_F(RCPolicyHandlerTest, OnUpdateHMIStatus_ValidAppAndHmiLevel_SUCCESS) {
 
   EXPECT_CALL(app_manager_,
               ChangeAppsHMILevel(kAppId1_, mobile_apis::HMILevel::HMI_NONE));
-  EXPECT_CALL(mock_message_helper_,
-              SendHMIStatusNotification(
-                  _, _));
+  EXPECT_CALL(mock_message_helper_, SendHMIStatusNotification(_, _));
 
   policy_handler_.OnUpdateHMIStatus(kDeviceId_, kPolicyAppId_, hmi_level);
 }
@@ -571,8 +567,7 @@ TEST_F(RCPolicyHandlerTest,
   const std::string device_rank("DRIVER");
   EXPECT_CALL(mock_message_helper_, StringToDeviceRank(device_rank))
       .WillOnce(Return(mobile_apis::DeviceRank::DRIVER));
-  EXPECT_CALL(mock_message_helper_,
-              SendHMIStatusNotification(_, _));
+  EXPECT_CALL(mock_message_helper_, SendHMIStatusNotification(_, _));
 
   EXPECT_CALL(app_manager_, ChangeAppsHMILevel(_, _)).Times(0);
   policy_handler_.OnUpdateHMIStatus(
@@ -595,9 +590,7 @@ TEST_F(RCPolicyHandlerTest, OnUpdateHMIStatusFourParams_ValidParams_SUCCESS) {
   EXPECT_CALL(*mock_app_, app_id()).WillRepeatedly(Return(kAppId1_));
   EXPECT_CALL(app_manager_,
               ChangeAppsHMILevel(kAppId1_, mobile_apis::HMILevel::HMI_NONE));
-  EXPECT_CALL(
-      mock_message_helper_,
-      SendHMIStatusNotification(_, _));
+  EXPECT_CALL(mock_message_helper_, SendHMIStatusNotification(_, _));
 
   policy_handler_.OnUpdateHMIStatus(
       kDeviceId_, kPolicyAppId_, hmi_level, device_rank);

@@ -72,5 +72,4 @@ Json::Value VehicleCapabilities::capabilities() const {
   return capabilities_;
 }
 
-
 }  // namespace can_cooperation
