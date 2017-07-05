@@ -71,8 +71,8 @@ const std::string kCreateSchema =
     "  `certificate` TEXT, "
     "  `vehicle_make` VARCHAR(45), "
     "  `vehicle_model` VARCHAR(45), "
-    "  `vehicle_year` VARCHAR(4),"
-    "  `user_consent_passengersRC` BOOL,"
+    "  `vehicle_year` VARCHAR(4), "
+    "  `user_consent_passengersRC` BOOL, "
     "  `country_consent_passengersRC` BOOL "
     "); "
     "CREATE TABLE IF NOT EXISTS `functional_group`( "
@@ -363,7 +363,7 @@ const std::string kCreateSchema =
     "CREATE TABLE `access_module`( "
     "  `id` INTEGER PRIMARY KEY NOT NULL, "
     "  `name` VARCHAR(45) NOT NULL, "
-    "  `user_consent_needed` INTEGER NOT NULL, "
+    "  `user_consent_needed` INTEGER NOT NULL "
     "); "
 
     /* remote_rpc */
