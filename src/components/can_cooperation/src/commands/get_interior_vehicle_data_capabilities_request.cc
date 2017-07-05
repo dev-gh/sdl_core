@@ -42,6 +42,7 @@
 #include "can_cooperation/vehicle_capabilities.h"
 #include "functional_module/function_ids.h"
 #include "json/json.h"
+#include "utils/logger.h"
 
 namespace can_cooperation {
 

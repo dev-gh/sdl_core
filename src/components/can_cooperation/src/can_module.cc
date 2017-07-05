@@ -226,76 +226,83 @@ functional_modules::ProcessResult CANModule::HandleMessage(
       event_dispatcher_.raise_event(event);
       break;
     }
-    case application_manager::MessageType::kNotification: {
-      if (functional_modules::hmi_api::on_interior_vehicle_data ==
-          function_name) {
-        msg->set_function_id(MobileFunctionID::ON_INTERIOR_VEHICLE_DATA);
-      } else if (functional_modules::hmi_api::on_reverse_apps_allowing ==
-                 function_name) {
-        if (value.isMember(json_keys::kParams)) {
-          // TODO(VS): Create commands for notifications
-          // TODO(VS): move validation to separate class
-          if (value[json_keys::kParams].isMember(message_params::kAllowed) &&
-              value[json_keys::kParams][message_params::kAllowed].isBool()) {
-            if ((!value[json_keys::kParams][message_params::kAllowed]
-                      .asBool()) &&
-                this->service()->IsRemoteControlAllowed()) {
-              msg->set_protocol_version(
-                  application_manager::ProtocolVersion::kV3);
-              ModuleHelper::ProccessOnReverseAppsDisallowed(*this);
-            }
-            PolicyHelper::OnRSDLFunctionalityAllowing(
-                value[json_keys::kParams][message_params::kAllowed].asBool(),
-                *this);
-          } else {
-            LOG4CXX_ERROR(logger_,
-                          "Invalid OnReverseAppsAllowing notification");
-          }
-        }
-        break;
-      } else if (functional_modules::hmi_api::on_device_rank_changed ==
-                 function_name) {
-        if (value.isMember(json_keys::kParams)) {
-          Json::Value& params = value[json_keys::kParams];
-          bool valid =
-              MessageHelper::ValidateDeviceInfo(params.get(
-                  message_params::kDevice, Json::Value(Json::nullValue))) &&
-              params.isMember(message_params::kRank) &&
-              params[message_params::kRank].isString();
-          if (valid) {
-            const std::string device_id =
-                params[message_params::kDevice][json_keys::kId].asString();
-            const uint32_t device_handle =
-                service()->GetDeviceHandlerById(device_id);
-            std::string rank = params[message_params::kRank].asString();
-            PolicyHelper::ChangeDeviceRank(device_handle, rank, *this);
-            ModuleHelper::ProccessDeviceRankChanged(device_handle, rank, *this);
-          } else {
-            LOG4CXX_ERROR(logger_,
-                          "Invalid RC.OnDeviceRankChanged notification");
-          }
-        }
-        return ProcessResult::PROCESSED;
-      } else if (functional_modules::hmi_api::on_app_deactivated ==
-                 function_name) {
-        return ModuleHelper::ProcessOnAppDeactivation(value, *this);
-      }
+    // Disabled
 
-      int32_t func_id = msg->function_id();
-      std::string func_name = MessageHelper::GetMobileAPIName(
-          static_cast<functional_modules::MobileFunctionID>(func_id));
-      msg->set_function_name(func_name);
-      msg->set_protocol_version(application_manager::ProtocolVersion::kV3);
-      NotifyMobiles(msg);
-      break;
-    }
-    case application_manager::MessageType::kRequest: {
-      if (function_name == functional_modules::hmi_api::sdl_activate_app) {
-        msg->set_protocol_version(application_manager::ProtocolVersion::kHMI);
-        return ModuleHelper::ProcessSDLActivateApp(value, *this);
-      }
-      return ProcessResult::CANNOT_PROCESS;
-    }
+    //    case application_manager::MessageType::kNotification: {
+    //      if (functional_modules::hmi_api::on_interior_vehicle_data ==
+    //          function_name) {
+    //        msg->set_function_id(MobileFunctionID::ON_INTERIOR_VEHICLE_DATA);
+    //      } else if (functional_modules::hmi_api::on_reverse_apps_allowing ==
+    //                 function_name) {
+    //        if (value.isMember(json_keys::kParams)) {
+    //          // TODO(VS): Create commands for notifications
+    //          // TODO(VS): move validation to separate class
+    //          if (value[json_keys::kParams].isMember(message_params::kAllowed)
+    //          &&
+    //              value[json_keys::kParams][message_params::kAllowed].isBool())
+    //              {
+    //            if ((!value[json_keys::kParams][message_params::kAllowed]
+    //                      .asBool()) &&
+    //                this->service()->IsRemoteControlAllowed()) {
+    //              msg->set_protocol_version(
+    //                  application_manager::ProtocolVersion::kV3);
+    //              ModuleHelper::ProccessOnReverseAppsDisallowed(*this);
+    //            }
+    //            PolicyHelper::OnRSDLFunctionalityAllowing(
+    //                value[json_keys::kParams][message_params::kAllowed].asBool(),
+    //                *this);
+    //          } else {
+    //            LOG4CXX_ERROR(logger_,
+    //                          "Invalid OnReverseAppsAllowing notification");
+    //          }
+    //        }
+    //        break;
+    //      } else if (functional_modules::hmi_api::on_device_rank_changed ==
+    //                 function_name) {
+    //        if (value.isMember(json_keys::kParams)) {
+    //          Json::Value& params = value[json_keys::kParams];
+    //          bool valid =
+    //              MessageHelper::ValidateDeviceInfo(params.get(
+    //                  message_params::kDevice, Json::Value(Json::nullValue)))
+    //                  &&
+    //              params.isMember(message_params::kRank) &&
+    //              params[message_params::kRank].isString();
+    //          if (valid) {
+    //            const std::string device_id =
+    //                params[message_params::kDevice][json_keys::kId].asString();
+    //            const uint32_t device_handle =
+    //                service()->GetDeviceHandlerById(device_id);
+    //            std::string rank = params[message_params::kRank].asString();
+    //            PolicyHelper::ChangeDeviceRank(device_handle, rank, *this);
+    //            ModuleHelper::ProccessDeviceRankChanged(device_handle, rank,
+    //            *this);
+    //          } else {
+    //            LOG4CXX_ERROR(logger_,
+    //                          "Invalid RC.OnDeviceRankChanged notification");
+    //          }
+    //        }
+    //        return ProcessResult::PROCESSED;
+    //      } else if (functional_modules::hmi_api::on_app_deactivated ==
+    //                 function_name) {
+    //        return ModuleHelper::ProcessOnAppDeactivation(value, *this);
+    //      }
+
+    //      int32_t func_id = msg->function_id();
+    //      std::string func_name = MessageHelper::GetMobileAPIName(
+    //          static_cast<functional_modules::MobileFunctionID>(func_id));
+    //      msg->set_function_name(func_name);
+    //      msg->set_protocol_version(application_manager::ProtocolVersion::kV3);
+    //      NotifyMobiles(msg);
+    //      break;
+    //    }
+    //    case application_manager::MessageType::kRequest: {
+    //      if (function_name == functional_modules::hmi_api::sdl_activate_app)
+    //      {
+    //        msg->set_protocol_version(application_manager::ProtocolVersion::kHMI);
+    //        return ModuleHelper::ProcessSDLActivateApp(value, *this);
+    //      }
+    //      return ProcessResult::CANNOT_PROCESS;
+    //    }
     default: { return ProcessResult::FAILED; }
   }
 
