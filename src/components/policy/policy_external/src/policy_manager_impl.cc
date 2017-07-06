@@ -597,7 +597,13 @@ void PolicyManagerImpl::CheckPermissions(const PTString& app_id,
     policy_table::FunctionalGroupings functional_groupings;
     cache_->GetFunctionalGroupings(functional_groupings);
 
-    policy_table::Strings app_groups = GetGroupsNames(app_group_permissions);
+#ifdef SDL_REMOTE_CONTROL
+    Subject who = {device_id, app_id};
+    const policy_table::Strings app_groups = access_remote_->GetGroups(who);
+#else   // SDL_REMOTE_CONTROL
+    const policy_table::Strings app_groups =
+        GetGroupsNames(app_group_permissions);
+#endif  // SDL_REMOTE_CONTROL
 
     // Undefined groups (without user consent) disallowed by default, since
     // OnPermissionsChange notification has no "undefined" section
