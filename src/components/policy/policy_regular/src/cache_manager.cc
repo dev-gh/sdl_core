@@ -147,8 +147,8 @@ bool CacheManager::CanAppStealFocus(const std::string& app_id) const {
 bool CacheManager::GetDefaultHMI(const std::string& app_id,
                                  std::string& default_hmi) const {
   CACHE_MANAGER_CHECK(false);
-  bool result = true;
-  return result;
+  default_hmi = "NONE";
+  return true;
 }
 
 bool CacheManager::ResetUserConsent() {
