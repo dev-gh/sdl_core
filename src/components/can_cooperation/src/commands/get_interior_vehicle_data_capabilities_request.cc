@@ -115,25 +115,11 @@ void GetInteriorVehicleDataCapabiliesRequest::OnEvent(
 
     validators::ValidationResult validation_result = validators::SUCCESS;
 
-    const int capabilities_min_size = 1;
-    const int capabilities_max_size = 1000;
-
     if (success) {
       validators::GetInteriorVehicleDataCapabilitiesResponseValidator validator;
       if (IsMember(value[kResult], kInteriorVehicleDataCapabilities)) {
-        int capabilities_size =
-            value[kResult][kInteriorVehicleDataCapabilities].size();
-        if (value[kResult][kInteriorVehicleDataCapabilities].isArray() &&
-            (capabilities_size >= capabilities_min_size) &&
-            (capabilities_size <= capabilities_max_size)) {
-          for (int i = 0; i < capabilities_size; ++i) {
-            validator.Validate(
-                value[kResult][kInteriorVehicleDataCapabilities][i],
-                response_params_[kInteriorVehicleDataCapabilities][i]);
-          }
-        } else {
-          validation_result = validators::INVALID_DATA;
-        }
+        validator.Validate(value[kResult][kInteriorVehicleDataCapabilities],
+                           response_params_[kInteriorVehicleDataCapabilities]);
       } else {
         validation_result = validators::INVALID_DATA;
       }
