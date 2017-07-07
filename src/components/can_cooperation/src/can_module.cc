@@ -295,14 +295,13 @@ functional_modules::ProcessResult CANModule::HandleMessage(
     //      NotifyMobiles(msg);
     //      break;
     //    }
-    //    case application_manager::MessageType::kRequest: {
-    //      if (function_name == functional_modules::hmi_api::sdl_activate_app)
-    //      {
-    //        msg->set_protocol_version(application_manager::ProtocolVersion::kHMI);
-    //        return ModuleHelper::ProcessSDLActivateApp(value, *this);
-    //      }
-    //      return ProcessResult::CANNOT_PROCESS;
-    //    }
+    case application_manager::MessageType::kRequest: {
+      if (function_name == functional_modules::hmi_api::sdl_activate_app) {
+        msg->set_protocol_version(application_manager::ProtocolVersion::kHMI);
+        return ModuleHelper::ProcessSDLActivateApp(value, *this);
+      }
+      return ProcessResult::CANNOT_PROCESS;
+    }
     default: { return ProcessResult::FAILED; }
   }
 
