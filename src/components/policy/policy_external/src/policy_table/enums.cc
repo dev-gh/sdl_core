@@ -466,6 +466,8 @@ const char* EnumToJsonString(AppHMIType val) {
       return "TESTING";
     case AHT_SYSTEM:
       return "SYSTEM";
+    case AHT_REMOTE_CONTROL:
+      return "REMOTE_CONTROL";
     default:
       return "";
   }
