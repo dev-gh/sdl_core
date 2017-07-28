@@ -61,6 +61,14 @@ class SetInteriorVehicleDataRequest : public BaseCommandRequest {
   void Execute() FINAL;
 
   /**
+   * @brief AcquireResource proxy AcquireResource to Resource allocation manager
+   * @param message message of requires contatin module types
+   * @return result of acauiring resources
+   */
+  AcquireResult::eType AcquireResource(
+      const Json::Value& message) OVERRIDE FINAL;
+
+  /**
    * @brief Interface method that is called whenever new event received
    *
    * @param event The received event
