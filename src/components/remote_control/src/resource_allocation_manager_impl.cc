@@ -13,7 +13,7 @@ CREATE_LOGGERPTR_GLOBAL(logger_, "RemoteControlModule")
 
 ResourceAllocationManagerImpl::ResourceAllocationManagerImpl(
     RemotePluginInterface& rc_plugin)
-    : current_access_mode_(AccessMode::AUTO_ALLOW)
+    : current_access_mode_(hmi_apis::Common_RCAccessMode::AUTO_ALLOW)
     , active_call_back_()
     , rc_plugin_(rc_plugin) {}
 
@@ -63,21 +63,21 @@ AcquireResult::eType ResourceAllocationManagerImpl::AcquireResource(
   }
 
   switch (current_access_mode_) {
-    case AccessMode::AUTO_DENY: {
+    case hmi_apis::Common_RCAccessMode::AUTO_DENY: {
       LOG4CXX_DEBUG(logger_,
                     "Current access_mode is AUTO_DENY. "
                         << "App: " << app_id << " is disallowed to acquire "
                         << module_type);
       return AcquireResult::IN_USE;
     }
-    case AccessMode::ASK_DRIVER: {
+    case hmi_apis::Common_RCAccessMode::ASK_DRIVER: {
       LOG4CXX_DEBUG(logger_,
                     "Current access_mode is ASK_DRIVER. "
                     "Driver confirmation is required for app: "
                         << app_id << " to acquire " << module_type);
       return AcquireResult::ASK_DRIVER;
     }
-    case AccessMode::AUTO_ALLOW: {
+    case hmi_apis::Common_RCAccessMode::AUTO_ALLOW: {
       LOG4CXX_DEBUG(logger_,
                     "Current access_mode is AUTO_ALLOW. "
                         << "App: " << app_id << " is allowed to acquire "
@@ -90,7 +90,7 @@ AcquireResult::eType ResourceAllocationManagerImpl::AcquireResource(
 }
 
 void ResourceAllocationManagerImpl::SetAccessMode(
-    const AccessMode::eType access_mode) {
+    const hmi_apis::Common_RCAccessMode::eType access_mode) {
   current_access_mode_ = access_mode;
 }
 

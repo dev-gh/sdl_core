@@ -39,6 +39,7 @@
 
 #include "utils/macro.h"
 #include "json/json.h"
+#include "interfaces/HMI_API.h"
 #include "functional_module/function_ids.h"
 #include "remote_control/remote_plugin_interface.h"
 #include "application_manager/message.h"
@@ -57,7 +58,7 @@ class MessageHelper {
    */
   static uint32_t GetNextRCCorrelationID();
   static const std::string GetMobileAPIName(
-      functional_modules::MobileFunctionID func_id);
+      functional_modules::RCFunctionID func_id);
 
   /**
    * @brief Convert Json::Value to std::string
@@ -105,21 +106,26 @@ class MessageHelper {
       const Json::Value& message_params,
       RemotePluginInterface& rc_module);
 
+  /** @brief Converts string to hmi AccessMode enum value
+   * @param access_mode stringified value
+   * @return hmi AccessMode enum value if succedeed, otherwise - INVALID_ENUM
+   * value
+   */
+  static hmi_apis::Common_RCAccessMode::eType AccessModeFromString(
+      const std::string& access_mode);
+
  private:
   MessageHelper();
 
   static uint32_t next_correlation_id_;
-  static const std::map<functional_modules::MobileFunctionID, std::string>
+  static const std::map<functional_modules::RCFunctionID, std::string>
       kMobileAPINames;
   DISALLOW_COPY_AND_ASSIGN(MessageHelper);
 };
 
-/**
- * @brief Check for existence of specified key in Json::Value
- *
+/** @brief Check for existence of specified key in Json::Value
  * @param value Value with json
  * @param key string with key name
- *
  * @return true if key exist
  */
 bool IsMember(const Json::Value& value, const std::string& key);

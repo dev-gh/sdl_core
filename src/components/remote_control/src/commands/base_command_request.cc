@@ -197,7 +197,7 @@ void BaseCommandRequest::SendMessageToHMI(
     }
     case AcquireResult::ASK_DRIVER: {
       ResourceAllocationManager& resource_manager =
-          rc_module_.resource_allocator_manager();
+          rc_module_.resource_allocation_manager();
       AskDriverCallBackPtr callback(
           new OnDriverAnswerCallback(message_to_send,
                                      resource_manager,

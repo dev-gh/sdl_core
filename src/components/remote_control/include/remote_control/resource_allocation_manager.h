@@ -3,6 +3,7 @@
 #include <string>
 #include "utils/macro.h"
 #include "utils/shared_ptr.h"
+#include "interfaces/HMI_API.h"
 #include "remote_control/event_engine/event.h"
 
 namespace remote_control {
@@ -13,13 +14,6 @@ namespace remote_control {
 namespace AcquireResult {
 enum eType { ALLOWED = 0, IN_USE, ASK_DRIVER, REJECTED };
 }
-
-/**
- * Enum contains list of access modes
- */
-namespace AccessMode {
-enum eType { AUTO_ALLOW = 0, AUTO_DENY, ASK_DRIVER };
-}  // AccessMode
 
 /**
  * @brief The AskDriverCallBack class callback for GetInteriourConsent response
@@ -71,6 +65,13 @@ class ResourceAllocationManager {
   virtual void AskDriver(const std::string& module_type,
                          const uint32_t app_id,
                          AskDriverCallBackPtr callback) = 0;
+
+  /**
+   * @brief Set current access mode for acquiring resource
+   * @param access_mode
+   */
+  virtual void SetAccessMode(
+      const hmi_apis::Common_RCAccessMode::eType access_mode) = 0;
 
   virtual ~ResourceAllocationManager() = 0;
 };

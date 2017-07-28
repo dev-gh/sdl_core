@@ -1,5 +1,5 @@
 /*
- Copyright (c) 2013, Ford Motor Company
+ Copyright (c) 2017, Ford Motor Company
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without
@@ -30,8 +30,8 @@
  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SRC_COMPONENTS_REMOTE_CONTROL_INCLUDE_REMOTE_CONTROL_COMMANDS_ON_INTERIOR_VEHICLE_DATA_NOTIFICATION_H_
-#define SRC_COMPONENTS_REMOTE_CONTROL_INCLUDE_REMOTE_CONTROL_COMMANDS_ON_INTERIOR_VEHICLE_DATA_NOTIFICATION_H_
+#ifndef SRC_COMPONENTS_REMOTE_CONTROL_INCLUDE_REMOTE_CONTROL_COMMANDS_ON_REMOTE_CONTROL_SETTINGS_NOTIFICATION_H_
+#define SRC_COMPONENTS_REMOTE_CONTROL_INCLUDE_REMOTE_CONTROL_COMMANDS_ON_REMOTE_CONTROL_SETTINGS_NOTIFICATION_H_
 
 #include "utils/macro.h"
 #include "remote_control/commands/base_command_notification.h"
@@ -41,16 +41,17 @@ namespace remote_control {
 namespace commands {
 
 /**
- * @brief OnInteriorVehicleDataNotification command class
+ * @brief OnRemoteControlSettingsNotification command class
  */
-class OnInteriorVehicleDataNotification : public BaseCommandNotification {
+class OnRemoteControlSettingsNotification : public BaseCommandNotification {
  public:
   /**
-   * @brief OnInteriorVehicleDataNotification class constructor
+   * @brief OnRemoteControlSettingsNotification class constructor
    *
    * @param message Message with notification
+   * @param rc_module Module used for handling RC functionality
    **/
-  OnInteriorVehicleDataNotification(
+  OnRemoteControlSettingsNotification(
       const application_manager::MessagePtr& message,
       RemotePluginInterface& rc_module);
 
@@ -59,17 +60,20 @@ class OnInteriorVehicleDataNotification : public BaseCommandNotification {
    */
   void Execute() FINAL;
 
+ private:
   /**
-   * @brief OnInteriorVehicleDataNotification class destructor
+   * @brief Disalows RC functionality for all RC apps
+   * All registered apps with appHMIType REMOTE_CONTROL will be put to NONE hmi
+   * level
+   * OnHMIStatus (NONE) will be send to such apps
+   * All registered apps will be unsubsribed from OnInteriorVehicleData
+   * notifications
    */
-  virtual ~OnInteriorVehicleDataNotification();
-
- protected:
-  std::string ModuleType(const Json::Value& message) FINAL;
+  void DisallowRCFunctionality();
 };
 
 }  // namespace commands
 
 }  // namespace remote_control
 
-#endif  // SRC_COMPONENTS_REMOTE_CONTROL_INCLUDE_REMOTE_CONTROL_COMMANDS_ON_INTERIOR_VEHICLE_DATA_NOTIFICATION_H_
+#endif  // SRC_COMPONENTS_REMOTE_CONTROL_INCLUDE_REMOTE_CONTROL_COMMANDS_ON_REMOTE_CONTROL_SETTINGS_NOTIFICATION_H_

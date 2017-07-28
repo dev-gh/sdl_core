@@ -49,7 +49,7 @@ namespace remote_control {
 using functional_modules::ProcessResult;
 using functional_modules::GenericModule;
 using functional_modules::PluginInfo;
-using functional_modules::MobileFunctionID;
+using functional_modules::RCFunctionID;
 namespace hmi_api = functional_modules::hmi_api;
 
 using namespace json_keys;
@@ -66,19 +66,20 @@ RemoteControlPlugin::RemoteControlPlugin()
 }
 
 void RemoteControlPlugin::SubscribeOnFunctions() {
-  plugin_info_.mobile_function_list.push_back(MobileFunctionID::BUTTON_PRESS);
-  plugin_info_.mobile_function_list.push_back(
-      MobileFunctionID::GET_INTERIOR_VEHICLE_DATA);
-  plugin_info_.mobile_function_list.push_back(
-      MobileFunctionID::SET_INTERIOR_VEHICLE_DATA);
-  plugin_info_.mobile_function_list.push_back(
-      MobileFunctionID::ON_INTERIOR_VEHICLE_DATA);
+  plugin_info_.rc_function_list.push_back(RCFunctionID::BUTTON_PRESS);
+  plugin_info_.rc_function_list.push_back(
+      RCFunctionID::GET_INTERIOR_VEHICLE_DATA);
+  plugin_info_.rc_function_list.push_back(
+      RCFunctionID::SET_INTERIOR_VEHICLE_DATA);
+  plugin_info_.rc_function_list.push_back(
+      RCFunctionID::ON_INTERIOR_VEHICLE_DATA);
 
   plugin_info_.hmi_function_list.push_back(hmi_api::get_interior_vehicle_data);
   plugin_info_.hmi_function_list.push_back(hmi_api::set_interior_vehicle_data);
   plugin_info_.hmi_function_list.push_back(hmi_api::on_interior_vehicle_data);
   plugin_info_.hmi_function_list.push_back(hmi_api::button_press);
   plugin_info_.hmi_function_list.push_back(hmi_api::get_user_consent);
+  plugin_info_.hmi_function_list.push_back(hmi_api::on_remote_control_settings);
 }
 
 RemoteControlPlugin::~RemoteControlPlugin() {
@@ -141,7 +142,7 @@ ProcessResult RemoteControlPlugin::ProcessMessage(
   DCHECK_OR_RETURN(msg, ProcessResult::FAILED);
 
   const std::string& function_name = MessageHelper::GetMobileAPIName(
-      static_cast<functional_modules::MobileFunctionID>(msg->function_id()));
+      static_cast<functional_modules::RCFunctionID>(msg->function_id()));
 
   LOG4CXX_DEBUG(logger_, "Function name to set : " << function_name);
   msg->set_function_name(function_name);
@@ -187,6 +188,9 @@ ProcessResult RemoteControlPlugin::ProcessHMIMessage(
     case application_manager::MessageType::kNotification: {
       if (hmi_api::on_interior_vehicle_data == function_name) {
         msg->set_function_id(functional_modules::ON_INTERIOR_VEHICLE_DATA);
+      }
+      if (hmi_api::on_remote_control_settings == function_name) {
+        msg->set_function_id(functional_modules::ON_REMOTE_CONTROL_SETTINGS);
       }
       const application_manager::MessageValidationResult validation_result =
           service()->ValidateMessageBySchema(*msg);
@@ -352,7 +356,7 @@ RCEventDispatcher& RemoteControlPlugin::event_dispatcher() {
   return event_dispatcher_;
 }
 
-ResourceAllocationManager& RemoteControlPlugin::resource_allocator_manager() {
+ResourceAllocationManager& RemoteControlPlugin::resource_allocation_manager() {
   return resource_allocation_manager_;
 }
 

@@ -111,7 +111,7 @@ class RemoteControlPlugin : public RemotePluginInterface {
 
   RCEventDispatcher& event_dispatcher() OVERRIDE;
 
-  ResourceAllocationManager& resource_allocator_manager() OVERRIDE;
+  ResourceAllocationManager& resource_allocation_manager() OVERRIDE;
 
  protected:
   /**

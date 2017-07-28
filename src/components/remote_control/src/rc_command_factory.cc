@@ -37,35 +37,40 @@
 #include "remote_control/commands/get_interior_vehicle_data_request.h"
 #include "remote_control/commands/set_interior_vehicle_data_request.h"
 #include "remote_control/commands/button_press_request.h"
-
 #include "remote_control/commands/on_interior_vehicle_data_notification.h"
+#include "remote_control/commands/on_remote_control_settings_notification.h"
 
 namespace remote_control {
 
 CREATE_LOGGERPTR_GLOBAL(logger_, "RemoteControl")
 
-using functional_modules::MobileFunctionID;
+using functional_modules::RCFunctionID;
 
 utils::SharedPtr<commands::Command> RCCommandFactory::CreateCommand(
     const application_manager::MessagePtr& msg,
     RemotePluginInterface& rc_module) {
   switch (msg->function_id()) {
-    case MobileFunctionID::GET_INTERIOR_VEHICLE_DATA: {
+    case RCFunctionID::GET_INTERIOR_VEHICLE_DATA: {
       return utils::MakeShared<commands::GetInteriorVehicleDataRequest>(
           msg, rc_module);
       break;
     }
-    case MobileFunctionID::SET_INTERIOR_VEHICLE_DATA: {
+    case RCFunctionID::SET_INTERIOR_VEHICLE_DATA: {
       return utils::MakeShared<commands::SetInteriorVehicleDataRequest>(
           msg, rc_module);
       break;
     }
-    case MobileFunctionID::BUTTON_PRESS: {
+    case RCFunctionID::BUTTON_PRESS: {
       return utils::MakeShared<commands::ButtonPressRequest>(msg, rc_module);
       break;
     }
-    case MobileFunctionID::ON_INTERIOR_VEHICLE_DATA: {
+    case RCFunctionID::ON_INTERIOR_VEHICLE_DATA: {
       return utils::MakeShared<commands::OnInteriorVehicleDataNotification>(
+          msg, rc_module);
+      break;
+    }
+    case RCFunctionID::ON_REMOTE_CONTROL_SETTINGS: {
+      return utils::MakeShared<commands::OnRemoteControlSettingsNotification>(
           msg, rc_module);
       break;
     }

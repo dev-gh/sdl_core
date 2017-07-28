@@ -43,7 +43,7 @@ namespace functional_modules {
 CREATE_LOGGERPTR_GLOBAL(logger_, "PluginManager")
 
 typedef std::map<ModuleID, ModulePtr>::iterator PluginsIterator;
-typedef std::map<MobileFunctionID, ModulePtr>::iterator PluginFunctionsIterator;
+typedef std::map<RCFunctionID, ModulePtr>::iterator PluginFunctionsIterator;
 typedef std::map<HMIFunctionID, ModulePtr>::iterator PluginHMIFunctionsIterator;
 
 PluginManager::PluginManager() : service_() {
@@ -103,11 +103,11 @@ int PluginManager::LoadPlugins(const std::string& plugin_path) {
                                               generic_plugin_dll));
       plugins_.insert(
           std::pair<ModuleID, ModulePtr>(module->GetModuleID(), module));
-      std::deque<MobileFunctionID> subscribers =
-          module->GetPluginInfo().mobile_function_list;
+      std::deque<RCFunctionID> subscribers =
+          module->GetPluginInfo().rc_function_list;
       for (size_t i = 0; i < subscribers.size(); ++i) {
         mobile_subscribers_.insert(
-            std::pair<MobileFunctionID, ModulePtr>(subscribers[i], module));
+            std::pair<RCFunctionID, ModulePtr>(subscribers[i], module));
       }
 
       std::deque<HMIFunctionID> hmi_subscribers =
@@ -149,8 +149,8 @@ void PluginManager::ProcessMessage(application_manager::MessagePtr msg) {
   if (application_manager::ProtocolVersion::kUnknownProtocol !=
           msg->protocol_version() &&
       application_manager::ProtocolVersion::kHMI != msg->protocol_version()) {
-    PluginFunctionsIterator subscribed_plugin_itr = mobile_subscribers_.find(
-        static_cast<MobileFunctionID>(msg->function_id()));
+    PluginFunctionsIterator subscribed_plugin_itr =
+        mobile_subscribers_.find(static_cast<RCFunctionID>(msg->function_id()));
     if (mobile_subscribers_.end() != subscribed_plugin_itr) {
       if (subscribed_plugin_itr->second->ProcessMessage(msg) !=
           ProcessResult::PROCESSED) {
@@ -222,7 +222,7 @@ bool PluginManager::IsMessageForPlugin(application_manager::MessagePtr msg) {
   if (application_manager::ProtocolVersion::kUnknownProtocol !=
           msg->protocol_version() &&
       application_manager::ProtocolVersion::kHMI != msg->protocol_version()) {
-    MobileFunctionID id = static_cast<MobileFunctionID>(msg->function_id());
+    RCFunctionID id = static_cast<RCFunctionID>(msg->function_id());
     return (mobile_subscribers_.find(id) != mobile_subscribers_.end());
   } else {
     return false;
@@ -239,7 +239,6 @@ bool PluginManager::IsHMIMessageForPlugin(application_manager::MessagePtr msg) {
   Json::Value value;
   Json::Reader reader;
   reader.parse(msg->json_message(), value);
-
   if (application_manager::ProtocolVersion::kHMI == msg->protocol_version()) {
     std::string msg_method;
     // Request or notification from HMI

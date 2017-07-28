@@ -104,7 +104,7 @@ void ButtonPressRequest::Execute() {
 AcquireResult::eType ButtonPressRequest::AcquireResource(
     const Json::Value& message) {
   ResourceAllocationManager& allocation_manager =
-      rc_module_.resource_allocator_manager();
+      rc_module_.resource_allocation_manager();
   const std::string& module_type = ModuleType(message);
   const uint32_t app_id = app()->app_id();
   return allocation_manager.AcquireResource(module_type, app_id);

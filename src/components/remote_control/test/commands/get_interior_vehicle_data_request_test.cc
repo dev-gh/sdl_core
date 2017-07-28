@@ -45,7 +45,7 @@
 #include "utils/shared_ptr.h"
 #include "utils/make_shared.h"
 
-using functional_modules::MobileFunctionID;
+using functional_modules::RCFunctionID;
 using application_manager::ServicePtr;
 
 using application_manager::MockService;
@@ -128,7 +128,7 @@ class GetInteriorVehicleDataRequestTest : public ::testing::Test {
     application_manager::MessagePtr message = utils::MakeShared<Message>(
         MessagePriority::FromServiceType(protocol_handler::ServiceType::kRpc));
     message->set_connection_key(kConnectionKey);
-    message->set_function_id(MobileFunctionID::GET_INTERIOR_VEHICLE_DATA);
+    message->set_function_id(RCFunctionID::GET_INTERIOR_VEHICLE_DATA);
     message->set_function_name("GetInteriorVehicleData");
     return message;
   }

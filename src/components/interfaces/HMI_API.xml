@@ -1607,6 +1607,13 @@
   </element>
 </enum>
 
+<enum name="RCAccessMode">
+  <description>Enumeration that describes possible remote control access mode the application might be in on HU.</description>
+  <element name="AUTO_ALLOW"/>
+  <element name="AUTO_DENY"/>
+  <element name="ASK_DRIVER"/>
+</enum>
+
 <!-- End Remote Control -->
 <struct name="TextField">
   <param name="name" type="Common.TextFieldName">
@@ -4723,6 +4730,14 @@
   </param>
 </function>
 
+<function name="OnRemoteControlSettings" messagetype="notification">
+  <description>Sender: vehicle -> RSDL. Notification about remote-control settings changed. Sent after User`s choice through HMI.</description>
+  <param name="allowed" type="Boolean" mandatory="false" >
+    <description>If "true" - RC is allowed; if "false" - RC is disallowed.</description>
+  </param>
+  <param name="accessMode" type="Common.RCAccessMode" mandatory="false" >
+    <description>The remote control access mode specified by the driver via HMI.</description>
+  </param>
+</function>
 </interface>
-
 </interfaces>

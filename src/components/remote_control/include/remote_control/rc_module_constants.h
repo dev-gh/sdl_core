@@ -167,9 +167,10 @@ const char kIsSubscribed[] = "isSubscribed";
 // const char kModuleData[] = "moduleData";
 // OnInteriorVehicleData notification
 
-// OnReverseAppsAllowing notification
+// OnRemoteControlSettings notification
+const char kAccessMode[] = "accessMode";
 const char kAllowed[] = "allowed";
-// OnReverseAppsAllowing notification
+// OnRemoteControlSettings notification
 
 // RC.OnDriverRankChanged notification
 const char kDevice[] = "device";
@@ -292,7 +293,13 @@ const char kRepeat[] = "REPEAT";
 const char kLong[] = "LONG";
 const char kShort[] = "SHORT";
 // ButtonPressMode enum
-}  //  namespace enums
+
+// Access mode enum
+const char kAutoAllow[] = "AUTO_ALLOW";
+const char kAutoDeny[] = "AUTO_DENY";
+const char kAskDriver[] = "ASK_DRIVER";
+// Access mode enum
+}  //  namespace enums_value
 
 }  //  namespace remote_control
 

@@ -18,7 +18,8 @@ class ResourceAllocationManagerImpl : public ResourceAllocationManager {
                  const uint32_t hmi_app_id,
                  AskDriverCallBackPtr callback) OVERRIDE FINAL;
 
-  void SetAccessMode(const AccessMode::eType access_mode);
+  void SetAccessMode(
+      const hmi_apis::Common_RCAccessMode::eType access_mode) FINAL;
   ~ResourceAllocationManagerImpl();
 
   void ForceAcquireResource(const std::string& module_type,
@@ -41,7 +42,7 @@ class ResourceAllocationManagerImpl : public ResourceAllocationManager {
   typedef std::map<uint32_t, std::vector<std::string> > RejectedResources;
   RejectedResources rejected_resources_for_application_;
 
-  AccessMode::eType current_access_mode_;
+  hmi_apis::Common_RCAccessMode::eType current_access_mode_;
   AskDriverCallBackPtr active_call_back_;
   RemotePluginInterface& rc_plugin_;
 };
