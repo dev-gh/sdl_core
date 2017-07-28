@@ -34,6 +34,7 @@
 #include "gtest/gtest.h"
 #include "mock_remote_control_plugin.h"
 #include "mock_application.h"
+#include "mock_resource_allocation_manager.h"
 #include "remote_control/rc_app_extension.h"
 #include "remote_control/remote_control_event.h"
 #include "remote_control/rc_module_constants.h"
@@ -65,6 +66,7 @@ using remote_control::MessageHelper;
 
 namespace {
 const int kModuleId = 153;
+
 const std::string kCorrectMobileRequest =
     "{\"moduleType\":\"CLIMATE\",\"buttonName\":\"AC\",\"buttonPressMode\":"
     "\"SHORT\"}";
@@ -94,6 +96,8 @@ class ButtonPressRequestTest : public ::testing::Test {
       , rc_app_extention_(
             utils::MakeShared<remote_control::RCAppExtension>(kModuleId)) {
     ON_CALL(mock_module_, service()).WillByDefault(Return(mock_service_));
+    ON_CALL(mock_module_, resource_allocator_manager())
+        .WillByDefault(ReturnRef(mock_allocation_manager_));
     ON_CALL(*mock_service_, GetApplication(kAppId))
         .WillByDefault(Return(mock_app_));
     EXPECT_CALL(mock_module_, event_dispatcher())
@@ -113,6 +117,7 @@ class ButtonPressRequestTest : public ::testing::Test {
     message->set_function_id(MobileFunctionID::BUTTON_PRESS);
     message->set_function_name(
         MessageHelper::GetMobileAPIName(functional_modules::BUTTON_PRESS));
+    message->set_connection_key(kAppId);
     return message;
   }
 
@@ -120,7 +125,10 @@ class ButtonPressRequestTest : public ::testing::Test {
   utils::SharedPtr<NiceMock<application_manager::MockService> > mock_service_;
   utils::SharedPtr<NiceMock<MockApplication> > mock_app_;
   utils::SharedPtr<remote_control::RCAppExtension> rc_app_extention_;
-  remote_control_test::MockRemotePluginInterface mock_module_;
+  testing::NiceMock<remote_control_test::MockRemotePluginInterface>
+      mock_module_;
+  testing::NiceMock<remote_control_test::MockResourceAllocationManager>
+      mock_allocation_manager_;
   RemotePluginInterface::RCPluginEventDispatcher event_dispatcher_;
 };
 
@@ -131,6 +139,8 @@ TEST_F(ButtonPressRequestTest,
   application_manager::MessagePtr mobile_message = CreateBasicMessage();
   mobile_message->set_json_message(kCorrectMobileRequest);
   // Expectations
+  ON_CALL(*mock_app_, app_id())
+      .WillByDefault(Return(mobile_message->connection_key()));
   EXPECT_CALL(*mock_service_, GetApplication(mobile_message->connection_key()))
       .WillOnce(Return(mock_app_));
   EXPECT_CALL(*mock_service_, ValidateMessageBySchema(*mobile_message))
@@ -150,6 +160,9 @@ TEST_F(ButtonPressRequestTest,
   application_manager::MessagePtr result_msg;
   EXPECT_CALL(*mock_service_, SendMessageToHMI(_))
       .WillOnce(SaveArg<0>(&result_msg));
+  EXPECT_CALL(mock_allocation_manager_, AcquireResource("CLIMATE", kAppId))
+      .WillOnce(Return(remote_control::AcquireResult::ALLOWED));
+
   // Act
   remote_control::request_controller::MobileRequestPtr command =
       CreateCommand(mobile_message);

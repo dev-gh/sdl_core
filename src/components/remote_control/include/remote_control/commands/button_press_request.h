@@ -58,6 +58,9 @@ class ButtonPressRequest : public BaseCommandRequest {
    */
   void Execute() FINAL;
 
+  AcquireResult::eType AcquireResource(
+      const Json::Value& message) OVERRIDE FINAL;
+
   /**
    * @brief Interface method that is called whenever new event received
    *
