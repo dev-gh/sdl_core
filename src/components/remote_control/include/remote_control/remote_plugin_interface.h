@@ -44,6 +44,8 @@
 namespace remote_control {
 
 class RCAppExtension;
+class ResourceAllocationManager;
+
 typedef utils::SharedPtr<RCAppExtension> RCAppExtensionPtr;
 
 class RemotePluginInterface : public functional_modules::GenericModule {
@@ -115,6 +117,8 @@ class RemotePluginInterface : public functional_modules::GenericModule {
                                            std::string> RCPluginEventDispatcher;
 
   virtual RCPluginEventDispatcher& event_dispatcher() = 0;
+
+  virtual ResourceAllocationManager& resource_allocator_manager() = 0;
 
  protected:
   /**
