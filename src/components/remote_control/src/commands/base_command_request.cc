@@ -32,6 +32,7 @@
 
 #include "remote_control/commands/base_command_request.h"
 #include <cstring>
+#include "utils/make_shared.h"
 #include "remote_control/event_engine/event_dispatcher.h"
 #include "remote_control/message_helper.h"
 #include "remote_control/remote_control_plugin.h"
@@ -94,12 +95,85 @@ void BaseCommandRequest::SendResponse(bool success,
   }
 }
 
+struct OnDriverAnswerCallback : AskDriverCallBack {
+ public:
+  OnDriverAnswerCallback(application_manager::MessagePtr hmi_message_to_send,
+                         ResourceAllocationManager& resource_manager,
+                         BaseCommandRequest& request,
+                         application_manager::Service& service,
+                         const std::string& module_type,
+                         uint32_t app_id)
+      : hmi_message_to_send_(hmi_message_to_send)
+      , resource_manager_(resource_manager)
+      , request_(request)
+      , service_(service)
+      , module_type_(module_type)
+      , app_id_(app_id) {}
+
+  void on_event(
+      const rc_event_engine::Event<application_manager::MessagePtr,
+                                   std::string>& event) OVERRIDE FINAL {
+    application_manager::Message& hmi_response = *(event.event_message());
+    const application_manager::MessageValidationResult validate_result =
+        service_.ValidateMessageBySchema(hmi_response);
+    LOG4CXX_DEBUG(logger_,
+                  "HMI response validation result is " << validate_result);
+    if (validate_result !=
+        application_manager::MessageValidationResult::SUCCESS) {
+      return;
+    }
+
+    const Json::Value value =
+        MessageHelper::StringToValue(hmi_response.json_message());
+    const bool allowed = value[message_params::kAllowed].asBool();
+
+    if (allowed) {
+      service_.SendMessageToHMI(hmi_message_to_send_);
+      resource_manager_.ForceAcquireResource(module_type_, app_id_);
+    } else {
+      // Response to mobile with REJECTED RESULT_CODE
+      resource_manager_.OnDriverDisallowed(module_type_, app_id_);
+    }
+  }
+
+  application_manager::MessagePtr hmi_message_to_send_;
+  ResourceAllocationManager& resource_manager_;
+  BaseCommandRequest& request_;
+  application_manager::Service& service_;
+  const std::string& module_type_;
+  const uint32_t app_id_;
+};
+
 void BaseCommandRequest::SendRequest(const char* function_id,
                                      const Json::Value& message_params) {
   LOG4CXX_AUTO_TRACE(logger_);
   application_manager::MessagePtr message_to_send =
       CreateHmiRequest(function_id, message_params);
-  service_->SendMessageToHMI(message_to_send);
+  AcquireResult::eType acquire_result = AcquireResource(message_params);
+  switch (acquire_result) {
+    case AcquireResult::ALLOWED: {
+      service_->SendMessageToHMI(message_to_send);
+      break;
+    }
+    case AcquireResult::IN_USE: {
+      // Send Error (in use ) to mobile
+      break;
+    }
+    case AcquireResult::ASK_DRIVER: {
+      ResourceAllocationManager& resource_manager =
+          rc_module_.resource_allocator_manager();
+      AskDriverCallBackPtr callback(
+          new OnDriverAnswerCallback(message_to_send,
+                                     resource_manager,
+                                     *this,
+                                     *service(),
+                                     ModuleType(message_params),
+                                     app()->app_id()));
+      resource_manager.AskDriver(
+          ModuleType(message_params), app()->app_id(), callback);
+      break;
+    }
+  }
 }
 
 application_manager::MessagePtr BaseCommandRequest::CreateHmiRequest(
@@ -163,108 +237,82 @@ const char* BaseCommandRequest::GetMobileResultCode(
   switch (hmi_code) {
     case hmi_apis::Common_Result::SUCCESS: {
       return result_codes::kSuccess;
-      break;
     }
     case hmi_apis::Common_Result::UNSUPPORTED_REQUEST: {
       return result_codes::kUnsupportedRequest;
-      break;
     }
     case hmi_apis::Common_Result::UNSUPPORTED_RESOURCE: {
       return result_codes::kUnsupportedResource;
-      break;
     }
     case hmi_apis::Common_Result::DISALLOWED: {
       return result_codes::kDisallowed;
-      break;
     }
     case hmi_apis::Common_Result::REJECTED: {
       return result_codes::kRejected;
-      break;
     }
     case hmi_apis::Common_Result::ABORTED: {
       return result_codes::kAborted;
-      break;
     }
     case hmi_apis::Common_Result::IGNORED: {
       return result_codes::kIgnored;
-      break;
     }
     case hmi_apis::Common_Result::RETRY: {
       return result_codes::kRetry;
-      break;
     }
     case hmi_apis::Common_Result::IN_USE: {
       return result_codes::kInUse;
-      break;
     }
     case hmi_apis::Common_Result::DATA_NOT_AVAILABLE: {
       return result_codes::kVehicleDataNotAvailable;
-      break;
     }
     case hmi_apis::Common_Result::TIMED_OUT: {
       return result_codes::kTimedOut;
-      break;
     }
     case hmi_apis::Common_Result::INVALID_DATA: {
       return result_codes::kInvalidData;
-      break;
     }
     case hmi_apis::Common_Result::CHAR_LIMIT_EXCEEDED: {
       return result_codes::kCharLimitExceeded;
-      break;
     }
     case hmi_apis::Common_Result::INVALID_ID: {
       return result_codes::kInvalidId;
-      break;
     }
     case hmi_apis::Common_Result::DUPLICATE_NAME: {
       return result_codes::kDuplicateName;
-      break;
     }
     case hmi_apis::Common_Result::APPLICATION_NOT_REGISTERED: {
       return result_codes::kApplicationNotRegistered;
-      break;
     }
     case hmi_apis::Common_Result::WRONG_LANGUAGE: {
       return result_codes::kWrongLanguage;
-      break;
     }
     case hmi_apis::Common_Result::OUT_OF_MEMORY: {
       return result_codes::kOutOfMemory;
-      break;
     }
     case hmi_apis::Common_Result::TOO_MANY_PENDING_REQUESTS: {
       return result_codes::kTooManyPendingRequests;
-      break;
     }
     case hmi_apis::Common_Result::NO_APPS_REGISTERED: {
       return result_codes::kApplicationNotRegistered;
-      break;
     }
     case hmi_apis::Common_Result::NO_DEVICES_CONNECTED: {
       return result_codes::kApplicationNotRegistered;
-      break;
     }
     case hmi_apis::Common_Result::WARNINGS: {
       return result_codes::kWarnings;
-      break;
     }
     case hmi_apis::Common_Result::GENERIC_ERROR: {
       return result_codes::kGenericError;
-      break;
     }
     case hmi_apis::Common_Result::USER_DISALLOWED: {
       return result_codes::kUserDisallowed;
-      break;
     }
     case hmi_apis::Common_Result::READ_ONLY: {
       return result_codes::kReadOnly;
-      break;
     }
     default: {
       LOG4CXX_ERROR(logger_, "Unknown HMI result code " << hmi_code);
       return result_codes::kGenericError;
-      break;
     }
   }
 }
