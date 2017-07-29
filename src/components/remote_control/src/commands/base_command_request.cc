@@ -120,18 +120,46 @@ struct OnDriverAnswerCallback : AskDriverCallBack {
                   "HMI response validation result is " << validate_result);
     if (validate_result !=
         application_manager::MessageValidationResult::SUCCESS) {
+      request_.SendResponse(false,
+                            result_codes::kGenericError,
+                            "HMI has sent invalid parameters");
       return;
     }
 
     const Json::Value value =
         MessageHelper::StringToValue(hmi_response.json_message());
-    const bool allowed = value[message_params::kAllowed].asBool();
+
+    std::string result_code;
+    std::string info;
+    const bool is_response_successful =
+        request_.ParseResultCode(value, result_code, info);
+
+    if (result_codes::kTimedOut == result_code) {
+      info = "The resource is in use and the driver did not respond in time";
+    }
+
+    if (!is_response_successful) {
+      request_.SendResponse(false, result_code.c_str(), info);
+      return;
+    }
+
+    const bool allowed =
+        value[json_keys::kResult][message_params::kAllowed].asBool();
 
     if (allowed) {
+      request_.rc_module_.event_dispatcher().add_observer(
+          hmi_message_to_send_->function_name(),
+          hmi_message_to_send_->correlation_id(),
+          this);
+      LOG4CXX_DEBUG(logger_,
+                    "HMI Request:\n " << hmi_message_to_send_->json_message());
       service_.SendMessageToHMI(hmi_message_to_send_);
       resource_manager_.ForceAcquireResource(module_type_, app_id_);
     } else {
-      // Response to mobile with REJECTED RESULT_CODE
+      request_.SendResponse(false,
+                            result_codes::kRejected,
+                            "The resource is in use and the driver disallows "
+                            "this remote control RPC");
       resource_manager_.OnDriverDisallowed(module_type_, app_id_);
     }
   }
@@ -140,23 +168,30 @@ struct OnDriverAnswerCallback : AskDriverCallBack {
   ResourceAllocationManager& resource_manager_;
   BaseCommandRequest& request_;
   application_manager::Service& service_;
-  const std::string& module_type_;
+  const std::string module_type_;
   const uint32_t app_id_;
 };
 
-void BaseCommandRequest::SendRequest(const char* function_id,
-                                     const Json::Value& message_params) {
+void BaseCommandRequest::SendMessageToHMI(
+    const application_manager::MessagePtr& message_to_send) {
   LOG4CXX_AUTO_TRACE(logger_);
-  application_manager::MessagePtr message_to_send =
-      CreateHmiRequest(function_id, message_params);
+  const Json::Value message_params =
+      MessageHelper::StringToValue(message_->json_message());
+
   AcquireResult::eType acquire_result = AcquireResource(message_params);
   switch (acquire_result) {
     case AcquireResult::ALLOWED: {
+      rc_module_.event_dispatcher().add_observer(
+          message_to_send->function_name(),
+          message_to_send->correlation_id(),
+          this);
+      LOG4CXX_DEBUG(logger_,
+                    "HMI Request:\n " << message_to_send->json_message());
       service_->SendMessageToHMI(message_to_send);
       break;
     }
     case AcquireResult::IN_USE: {
-      // Send Error (in use ) to mobile
+      SendResponse(false, result_codes::kInUse, "");
       break;
     }
     case AcquireResult::ASK_DRIVER: {
@@ -170,43 +205,30 @@ void BaseCommandRequest::SendRequest(const char* function_id,
                                      ModuleType(message_params),
                                      app()->app_id()));
       resource_manager.AskDriver(
-          ModuleType(message_params), app()->app_id(), callback);
+          ModuleType(message_params), app()->hmi_app_id(), callback);
+      break;
+    }
+    case AcquireResult::REJECTED: {
+      SendResponse(false, result_codes::kRejected, "");
       break;
     }
   }
 }
 
+void BaseCommandRequest::SendRequest(const char* function_id,
+                                     const Json::Value& message_params) {
+  LOG4CXX_AUTO_TRACE(logger_);
+  application_manager::MessagePtr message_to_send =
+      CreateHmiRequest(function_id, message_params);
+  SendMessageToHMI(message_to_send);
+}
+
 application_manager::MessagePtr BaseCommandRequest::CreateHmiRequest(
     const char* function_id, const Json::Value& message_params) {
-  Json::Value msg;
-
-  msg[kId] = service_->GetNextCorrelationID();
-
-  rc_module_.event_dispatcher().add_observer(
-      function_id, msg[kId].asInt(), this);
-
-  msg[kJsonrpc] = "2.0";
-  msg[kMethod] = function_id;
-  if (!message_params.isNull()) {
-    msg[kParams] = message_params;
-  }
-
-  msg[kParams][json_keys::kAppId] = app_->hmi_app_id();
-
-  Json::FastWriter writer;
-  application_manager::MessagePtr message_to_send(
-      new application_manager::Message(
-          protocol_handler::MessagePriority::kDefault));
-  message_to_send->set_protocol_version(
-      application_manager::ProtocolVersion::kHMI);
-  message_to_send->set_correlation_id(msg[kId].asInt());
-  std::string json_msg = writer.write(msg);
-  message_to_send->set_json_message(json_msg);
-  message_to_send->set_message_type(application_manager::MessageType::kRequest);
-
-  LOG4CXX_DEBUG(logger_, "\nRequest to HMI: \n" << json_msg);
-
-  return message_to_send;
+  LOG4CXX_AUTO_TRACE(logger_);
+  const uint32_t hmi_app_id = app_->hmi_app_id();
+  return MessageHelper::CreateHmiRequest(
+      function_id, hmi_app_id, message_params, rc_module_);
 }
 
 bool BaseCommandRequest::Validate() {
@@ -557,8 +579,9 @@ void BaseCommandRequest::ProcessAccessResponse(
     Execute();  // run child's logic
   } else {
     SendResponse(false,
-                 result_codes::kUserDisallowed,
-                 "The driver disallows this remote-control RPC");
+                 result_codes::kRejected,
+                 "The resource is in use and the driver disallows this remote "
+                 "control RPC");
   }
 }
 

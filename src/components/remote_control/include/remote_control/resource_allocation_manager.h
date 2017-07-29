@@ -11,8 +11,15 @@ namespace remote_control {
  * Enum for list of results of allocation resources
  */
 namespace AcquireResult {
-enum eType { ALLOWED = 0, IN_USE, ASK_DRIVER };
+enum eType { ALLOWED = 0, IN_USE, ASK_DRIVER, REJECTED };
 }
+
+/**
+ * Enum contains list of access modes
+ */
+namespace AccessMode {
+enum eType { AUTO_ALLOW = 0, AUTO_DENY, ASK_DRIVER };
+}  // AccessMode
 
 /**
  * @brief The AskDriverCallBack class callback for GetInteriourConsent response
@@ -37,7 +44,7 @@ class ResourceAllocationManager {
    *         ASK_DRIVER if driver confirmation is required
    */
   virtual AcquireResult::eType AcquireResource(const std::string& module_type,
-                                               uint32_t app_id) = 0;
+                                               const uint32_t app_id) = 0;
 
   /**
    * @brief AcquireResource forces acquiring resource by application
@@ -45,7 +52,7 @@ class ResourceAllocationManager {
    * @param app_id application that acquire resource
    */
   virtual void ForceAcquireResource(const std::string& module_type,
-                                    uint32_t app_id) = 0;
+                                    const uint32_t app_id) = 0;
 
   /**
    * @brief OnDriverDisallowed callback for rejecting acquiring resource
@@ -53,7 +60,7 @@ class ResourceAllocationManager {
    * @param app_id application id
    */
   virtual void OnDriverDisallowed(const std::string& module_type,
-                                  uint32_t app_id) = 0;
+                                  const uint32_t app_id) = 0;
   /**
    * @brief AskDriver send GetInteriorConsent request to HMI for acquiring
    * resource
@@ -62,7 +69,7 @@ class ResourceAllocationManager {
    * @param callback will be executed on OnInteriorConsent response
    */
   virtual void AskDriver(const std::string& module_type,
-                         uint32_t app_id,
+                         const uint32_t app_id,
                          AskDriverCallBackPtr callback) = 0;
 
   virtual ~ResourceAllocationManager() = 0;

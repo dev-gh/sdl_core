@@ -4700,6 +4700,24 @@
   </param>
 </function>
 
+<function name="GetInteriorVehicleDataConsent" messagetype="request">
+    <description>Sender: SDL->HMI. </description>
+    <description>HMI is expected to display a permission prompt to the driver showing the RC module and app details (for example, app's name).
+    The driver is expected to have an ability to grant or deny the permission.</description>
+    <param name="moduleType" type="Common.ModuleType" mandatory="true">
+      <description>The module type that the app requests to control.</description>
+    </param>
+    <param name="appID" type="Integer" mandatory="true">
+      <description>ID of the application that triggers the permission prompt.</description>
+    </param>
+  </function>
+  <function name="GetInteriorVehicleDataConsent" messagetype="response">
+    <param name="allowed" type="Boolean" mandatory="true">
+      <description>"true" - if the driver grants the permission for controlling to the named app;
+      "false" - in case the driver denies the permission for controlling to the named app.</description>
+    </param>
+</function>
+
 <function name="OnInteriorVehicleData" functionID="OnInteriorVehicleDataID" messagetype="notification">
   <param name="moduleData" type="Common.ModuleData">
   </param>

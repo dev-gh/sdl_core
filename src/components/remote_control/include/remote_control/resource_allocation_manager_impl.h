@@ -5,13 +5,6 @@
 #include "utils/macro.h"
 namespace remote_control {
 
-/**
- * enum contains list of access modes
- */
-namespace AccessMode {
-enum eType { AUTO_ALLOW = 0, AUTO_DENY, ASK_DRIVER };
-}  // AccessMode
-
 typedef rc_event_engine::EventDispatcher<application_manager::MessagePtr,
                                          std::string> RCEventDispatcher;
 
@@ -20,21 +13,23 @@ class ResourceAllocationManagerImpl : public ResourceAllocationManager {
   ResourceAllocationManagerImpl(RemotePluginInterface& rc_plugin);
 
   AcquireResult::eType AcquireResource(const std::string& module_type,
-                                       uint32_t app_id) OVERRIDE FINAL;
+                                       const uint32_t app_id) OVERRIDE FINAL;
   void AskDriver(const std::string& module_type,
-                 uint32_t app_id,
+                 const uint32_t hmi_app_id,
                  AskDriverCallBackPtr callback) OVERRIDE FINAL;
 
-  void SetAccessMode(AccessMode::eType access_mode);
+  void SetAccessMode(const AccessMode::eType access_mode);
   ~ResourceAllocationManagerImpl();
 
   void ForceAcquireResource(const std::string& module_type,
-                            uint32_t app_id) OVERRIDE FINAL;
+                            const uint32_t app_id) OVERRIDE FINAL;
 
   void OnDriverDisallowed(const std::string& module_type,
-                          uint32_t app_id) OVERRIDE FINAL;
+                          const uint32_t app_id) OVERRIDE FINAL;
 
  private:
+  bool IsModuleTypeRejected(const std::string& module_type,
+                            const uint32_t app_id);
   typedef std::map<std::string, uint32_t> AllocatedResources;
   std::map<std::string, uint32_t> allocated_resources_;
 
