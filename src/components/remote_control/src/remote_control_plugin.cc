@@ -58,7 +58,8 @@ CREATE_LOGGERPTR_GLOBAL(logger_, "RemoteControl");
 
 EXPORT_FUNCTION_IMPL(remote_control::RemoteControlPlugin);
 
-RemoteControlPlugin::RemoteControlPlugin() : is_scan_started_(false) {
+RemoteControlPlugin::RemoteControlPlugin()
+    : is_scan_started_(false), resource_allocation_manager_(*this) {
   plugin_info_.name = "RemoteControlPlugin";
   plugin_info_.version = 1;
   SubscribeOnFunctions();
@@ -347,9 +348,12 @@ void RemoteControlPlugin::OnDeviceRemoved(
     service()->ResetPrimaryDevice();
   }
 }
-rc_event_engine::EventDispatcher<application_manager::MessagePtr, std::string>&
-RemoteControlPlugin::event_dispatcher() {
+RCEventDispatcher& RemoteControlPlugin::event_dispatcher() {
   return event_dispatcher_;
+}
+
+ResourceAllocationManager& RemoteControlPlugin::resource_allocator_manager() {
+  return resource_allocation_manager_;
 }
 
 }  //  namespace remote_control

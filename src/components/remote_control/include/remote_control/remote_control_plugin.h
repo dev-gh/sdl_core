@@ -41,8 +41,11 @@
 #include "remote_control/request_controller.h"
 #include "utils/threads/message_loop_thread.h"
 #include "remote_control/event_engine/event_dispatcher.h"
+#include "remote_control/resource_allocation_manager_impl.h"
 
 namespace remote_control {
+typedef rc_event_engine::EventDispatcher<application_manager::MessagePtr,
+                                         std::string> RCEventDispatcher;
 
 class RemoteControlPlugin : public RemotePluginInterface {
  public:
@@ -101,19 +104,20 @@ class RemoteControlPlugin : public RemotePluginInterface {
    * Handles removing (disconnecting) device
    * @param device removed
    */
-  void OnDeviceRemoved(const connection_handler::DeviceHandle& device);
+  void OnDeviceRemoved(const connection_handler::DeviceHandle& device) OVERRIDE;
 
-  void SendHmiStatusNotification(application_manager::ApplicationSharedPtr app);
+  void SendHmiStatusNotification(
+      application_manager::ApplicationSharedPtr app) OVERRIDE;
 
-  rc_event_engine::EventDispatcher<application_manager::MessagePtr,
-                                   std::string>&
-  event_dispatcher();
+  RCEventDispatcher& event_dispatcher() OVERRIDE;
+
+  ResourceAllocationManager& resource_allocator_manager() OVERRIDE;
 
  protected:
   /**
    * @brief Remove extension for all applications
    */
-  virtual void RemoveAppExtensions();
+  virtual void RemoveAppExtensions() OVERRIDE;
 
  private:
   void SubscribeOnFunctions();
@@ -121,12 +125,14 @@ class RemoteControlPlugin : public RemotePluginInterface {
 
   functional_modules::ProcessResult HandleMessage(
       application_manager::MessagePtr msg);
+
   functional_modules::PluginInfo plugin_info_;
   bool is_scan_started_;
   request_controller::RequestController request_controller_;
-  rc_event_engine::EventDispatcher<application_manager::MessagePtr, std::string>
-      event_dispatcher_;
 
+  RCEventDispatcher event_dispatcher_;
+
+  ResourceAllocationManagerImpl resource_allocation_manager_;
   DISALLOW_COPY_AND_ASSIGN(RemoteControlPlugin);
 };
 

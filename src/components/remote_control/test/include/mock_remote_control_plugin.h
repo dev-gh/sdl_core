@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "remote_control/remote_plugin_interface.h"
+#include "remote_control/resource_allocation_manager.h"
 #include "application_manager/message.h"
 #include "mock_application.h"
 
@@ -42,6 +43,8 @@ class MockRemotePluginInterface : public remote_control::RemotePluginInterface {
   MOCK_METHOD0(RemoveAppExtensions, void());
   MOCK_METHOD0(service, application_manager::ServicePtr());
   MOCK_CONST_METHOD0(GetModuleID, functional_modules::ModuleID());
+  MOCK_METHOD0(resource_allocator_manager,
+               remote_control::ResourceAllocationManager&());
 };
 
 }  // namespace remote_control_test

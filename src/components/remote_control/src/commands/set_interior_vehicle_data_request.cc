@@ -114,6 +114,12 @@ void SetInteriorVehicleDataRequest::Execute() {
   }
 }
 
+AcquireResult::eType SetInteriorVehicleDataRequest::AcquireResource(
+    const Json::Value& message) {
+  return rc_module_.resource_allocator_manager().AcquireResource(
+      ModuleType(message), app()->app_id());
+}
+
 bool SetInteriorVehicleDataRequest::AreReadOnlyParamsPresent(
     const Json::Value& request_params) {
   LOG4CXX_AUTO_TRACE(logger_);

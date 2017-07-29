@@ -92,6 +92,18 @@ class BaseCommandRequest
   Json::Value response_params_;
 
   /**
+   * @brief AcquireResource try to allocate resource for application
+   * In case if allocation of resource is not required, return ALLOWED by
+   * default.
+   * This method should be overrided in RPCs that requires resource allocation
+   * @return result of resource allocation, in case if allocation os not
+   * required, return ALLOWED
+   */
+  virtual AcquireResult::eType AcquireResource(const Json::Value&) {
+    return AcquireResult::ALLOWED;
+  }
+
+  /**
    * @brief Get extension for specified application. If extension doesn't exist,
    * it will be created
    * @param app pointer to application
