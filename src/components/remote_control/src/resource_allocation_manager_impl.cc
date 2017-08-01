@@ -5,6 +5,7 @@
 #include "json/json.h"
 #include "utils/helpers.h"
 #include "utils/make_shared.h"
+#include "remote_control/message_helper.h"
 
 namespace remote_control {
 
@@ -44,13 +45,14 @@ AcquireResult::eType ResourceAllocationManagerImpl::AcquireResource(
     return AcquireResult::ALLOWED;
   }
 
+  if (app_id == allocated_resources_[module_type]) {
+    return AcquireResult::ALLOWED;
+  }
+
   const mobile_apis::HMILevel::eType acquiring_app_hmi_level =
       acquiring_app->hmi_level();
 
   if (mobile_apis::HMILevel::HMI_FULL != acquiring_app_hmi_level) {
-    if (app_id == allocated_resources_[module_type]) {
-      return AcquireResult::ALLOWED;
-    }
     LOG4CXX_DEBUG(
         logger_,
         "Aquiring resources is not allowed in HMI level: "
@@ -99,33 +101,23 @@ void ResourceAllocationManagerImpl::AskDriver(const std::string& module_type,
   DCHECK(callback);
   // Create GetInteriorConsent request to HMI
   Json::Value params;
-  params[json_keys::kParams][json_keys::kAppId] = hmi_app_id;
-  params[json_keys::kParams][message_params::kModuleType] = module_type;
-  params[json_keys::kId] = rc_plugin_.service()->GetNextCorrelationID();
-  params[json_keys::kJsonrpc] = "2.0";
-  params[json_keys::kMethod] = functional_modules::hmi_api::get_user_consent;
-
-  Json::FastWriter writer;
+  params[message_params::kModuleType] = module_type;
   application_manager::MessagePtr message_to_send =
-      utils::MakeShared<application_manager::Message>(
-          application_manager::Message(
-              protocol_handler::MessagePriority::kDefault));
-  message_to_send->set_protocol_version(
-      application_manager::ProtocolVersion::kHMI);
-  message_to_send->set_correlation_id(params[json_keys::kId].asInt());
-  std::string json_msg = writer.write(params);
-  message_to_send->set_json_message(json_msg);
-  message_to_send->set_message_type(application_manager::MessageType::kRequest);
+      remote_control::MessageHelper::CreateHmiRequest(
+          functional_modules::hmi_api::get_user_consent,
+          hmi_app_id,
+          params,
+          rc_plugin_);
 
-  LOG4CXX_DEBUG(logger_, "Request to HMI: \n" << json_msg);
+  LOG4CXX_DEBUG(logger_,
+                "Request to HMI: \n" << message_to_send->json_message());
   // Send GetInteriorConsent request to HMI
   rc_plugin_.service()->SendMessageToHMI(message_to_send);
 
   // Execute callback on response
-  rc_plugin_.event_dispatcher().add_observer(
-      params[json_keys::kMethod].asString(),
-      params[json_keys::kId].asInt(),
-      callback.get());
+  rc_plugin_.event_dispatcher().add_observer(message_to_send->function_name(),
+                                             message_to_send->correlation_id(),
+                                             callback.get());
   active_call_back_ = callback;
 }
 
