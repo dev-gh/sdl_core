@@ -113,6 +113,7 @@ struct OnDriverAnswerCallback : AskDriverCallBack {
   void on_event(
       const rc_event_engine::Event<application_manager::MessagePtr,
                                    std::string>& event) OVERRIDE FINAL {
+    LOG4CXX_AUTO_TRACE(logger_);
     application_manager::Message& hmi_response = *(event.event_message());
     const application_manager::MessageValidationResult validate_result =
         service_.ValidateMessageBySchema(hmi_response);
@@ -150,7 +151,7 @@ struct OnDriverAnswerCallback : AskDriverCallBack {
       request_.rc_module_.event_dispatcher().add_observer(
           hmi_message_to_send_->function_name(),
           hmi_message_to_send_->correlation_id(),
-          this);
+          &request_);
       LOG4CXX_DEBUG(logger_,
                     "HMI Request:\n " << hmi_message_to_send_->json_message());
       service_.SendMessageToHMI(hmi_message_to_send_);
