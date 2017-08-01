@@ -148,7 +148,7 @@ TEST_F(GetInteriorVehicleDataRequestTest,
   application_manager::MessagePtr mobile_message = CreateBasicMessage();
   mobile_message->set_json_message(kValidMobileRequest);
   // Expectations
-  EXPECT_CALL(mock_module_, service()).WillOnce(Return(mock_service_));
+  EXPECT_CALL(mock_module_, service()).Times(2).WillOnce(Return(mock_service_));
   EXPECT_CALL(*mock_service_, GetApplication(mobile_message->connection_key()))
       .WillOnce(Return(mock_app_));
   EXPECT_CALL(*mock_service_, ValidateMessageBySchema(*mobile_message))
