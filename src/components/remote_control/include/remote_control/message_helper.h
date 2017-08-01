@@ -40,6 +40,8 @@
 #include "utils/macro.h"
 #include "json/json.h"
 #include "functional_module/function_ids.h"
+#include "remote_control/remote_plugin_interface.h"
+#include "application_manager/message.h"
 
 namespace remote_control {
 
@@ -88,6 +90,20 @@ class MessageHelper {
    * @return true if json is valid
    */
   static bool ValidateInteriorZone(const Json::Value& value);
+
+  /**
+   * Creates hmi request
+   * @param function_id - API function we create request for
+   * @param message_params - params in request
+   * @param rc_module - used module for requests handling
+   * @param hmi_app_id - app is used between SDL & HMI
+   * @return creted request - reqdy to be sent to hmi
+   */
+  static application_manager::MessagePtr CreateHmiRequest(
+      const char* function_id,
+      const uint32_t hmi_app_id,
+      const Json::Value& message_params,
+      RemotePluginInterface& rc_module);
 
  private:
   MessageHelper();

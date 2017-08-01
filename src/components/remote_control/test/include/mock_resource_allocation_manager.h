@@ -21,14 +21,14 @@ class MockResourceAllocationManager
  public:
   MOCK_METHOD2(AcquireResource,
                remote_control::AcquireResult::eType(
-                   const std::string& module_type, uint32_t app_id));
+                   const std::string& module_type, const uint32_t app_id));
   MOCK_METHOD2(ForceAcquireResource,
-               void(const std::string& module_type, uint32_t app_id));
+               void(const std::string& module_type, const uint32_t app_id));
   MOCK_METHOD2(OnDriverDisallowed,
-               void(const std::string& module_type, uint32_t app_id));
+               void(const std::string& module_type, const uint32_t app_id));
   MOCK_METHOD3(AskDriver,
                void(const std::string& module_type,
-                    uint32_t app_id,
+                    const uint32_t app_id,
                     remote_control::AskDriverCallBackPtr callback));
 };
 

@@ -47,6 +47,9 @@ namespace remote_control {
 
 namespace commands {
 
+// Forward declaration to make this struct friend to BaseCommandRequest
+struct OnDriverAnswerCallback;
+
 /**
  * @brief Base command class for requests
  */
@@ -149,6 +152,12 @@ class BaseCommandRequest
                        std::string& info);
 
   /**
+     * @brief Sends request to HMI
+     * @param message_to_send to send
+     */
+  void SendMessageToHMI(const application_manager::MessagePtr& message_to_send);
+
+  /**
    * @brief Sends request to CAN or HMI
    * @param function_id request ID
    * @param msg_params json with message params
@@ -227,6 +236,8 @@ class BaseCommandRequest
   application_manager::ServicePtr service_;
   bool auto_allowed_;
   std::string disallowed_info_;
+
+  friend struct OnDriverAnswerCallback;
 };
 
 }  // namespace commands
