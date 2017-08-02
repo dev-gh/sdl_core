@@ -120,6 +120,29 @@ class BaseCommandRequest
   }
 
   /**
+   * @brief IsResourceFree check resource state
+   * This is default implementation which has to be redefined for RPCs which
+   * need to manager the resources
+   * @param module_type Resource name
+   * @return True if free, otherwise - false
+   */
+  virtual bool IsResourceFree(const std::string& module_type) const {
+    UNUSED(module_type);
+    return true;
+  }
+
+  /**
+   * @brief SetResourceState changes state of resource
+   * This is default implementation which has to be redefined for RPCs which
+   * need to manager the resources
+   * @param state State to set for resource
+   */
+  virtual void SetResourceState(const Json::Value&,
+                                const ResourceState::eType state) {
+    UNUSED(state);
+  }
+
+  /**
    * @brief Get extension for specified application. If extension doesn't exist,
    * it will be created
    * @param app pointer to application

@@ -155,8 +155,13 @@ struct OnDriverAnswerCallback : AskDriverCallBack {
           &request_);
       LOG4CXX_DEBUG(logger_,
                     "HMI Request:\n " << hmi_message_to_send_->json_message());
-      service_.SendMessageToHMI(hmi_message_to_send_);
+
       resource_manager_.ForceAcquireResource(module_type_, app_id_);
+      request_.SetResourceState(
+          MessageHelper::StringToValue(request_.message_->json_message()),
+          ResourceState::BUSY);
+
+      service_.SendMessageToHMI(hmi_message_to_send_);
     } else {
       request_.SendResponse(false,
                             result_codes::kRejected,
@@ -180,9 +185,18 @@ void BaseCommandRequest::SendMessageToHMI(
   const Json::Value message_params =
       MessageHelper::StringToValue(message_->json_message());
 
+  if (!IsResourceFree(ModuleType(message_params))) {
+    LOG4CXX_WARN(logger_, "Resource is busy.");
+    SendResponse(false, result_codes::kInUse, "");
+    return;
+  }
+
   AcquireResult::eType acquire_result = AcquireResource(message_params);
   switch (acquire_result) {
     case AcquireResult::ALLOWED: {
+      SetResourceState(MessageHelper::StringToValue(message_->json_message()),
+                       ResourceState::BUSY);
+
       rc_module_.event_dispatcher().add_observer(
           message_to_send->function_name(),
           message_to_send->correlation_id(),
@@ -520,6 +534,8 @@ void BaseCommandRequest::on_event(
     if (auto_allowed()) {
       UpdateHMILevel(event);
     }
+    SetResourceState(MessageHelper::StringToValue(message_->json_message()),
+                     ResourceState::FREE);
     OnEvent(event);  // run child's logic
   }
 }
