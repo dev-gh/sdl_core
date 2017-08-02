@@ -109,7 +109,7 @@ class PluginManager : public ModuleObserver {
  private:
   Modules plugins_;
   std::map<ModuleID, void*> dlls_;
-  std::map<MobileFunctionID, ModulePtr> mobile_subscribers_;
+  std::map<RCFunctionID, ModulePtr> mobile_subscribers_;
   std::map<HMIFunctionID, ModulePtr> hmi_subscribers_;
   application_manager::ServicePtr service_;
 

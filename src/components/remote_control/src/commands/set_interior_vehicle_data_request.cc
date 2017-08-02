@@ -116,7 +116,7 @@ void SetInteriorVehicleDataRequest::Execute() {
 
 AcquireResult::eType SetInteriorVehicleDataRequest::AcquireResource(
     const Json::Value& message) {
-  return rc_module_.resource_allocator_manager().AcquireResource(
+  return rc_module_.resource_allocation_manager().AcquireResource(
       ModuleType(message), app()->app_id());
 }
 

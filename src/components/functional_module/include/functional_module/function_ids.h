@@ -35,12 +35,13 @@
 
 namespace functional_modules {
 
-enum MobileFunctionID {
+enum RCFunctionID {
   // Remote SDL functions ids
   BUTTON_PRESS = 41,
   GET_INTERIOR_VEHICLE_DATA = 43,
   SET_INTERIOR_VEHICLE_DATA = 44,
   ON_INTERIOR_VEHICLE_DATA = 32783,
+  ON_REMOTE_CONTROL_SETTINGS,
 };
 
 namespace hmi_api {
@@ -48,6 +49,7 @@ const char get_interior_vehicle_data[] = "RC.GetInteriorVehicleData";
 const char set_interior_vehicle_data[] = "RC.SetInteriorVehicleData";
 const char on_interior_vehicle_data[] = "RC.OnInteriorVehicleData";
 const char button_press[] = "Buttons.ButtonPress";
+const char on_remote_control_settings[] = "RC.OnRemoteControlSettings";
 
 const char get_user_consent[] = "RC.GetInteriorVehicleDataConsent";
 const char on_app_deactivated[] = "BasicCommunication.OnAppDeactivated";

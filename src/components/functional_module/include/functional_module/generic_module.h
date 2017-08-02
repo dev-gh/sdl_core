@@ -60,7 +60,7 @@ typedef utils::SharedPtr<GenericModule> ModulePtr;
 struct PluginInfo {
   std::string name;
   int version;
-  std::deque<MobileFunctionID> mobile_function_list;
+  std::deque<RCFunctionID> rc_function_list;
   std::deque<HMIFunctionID> hmi_function_list;
 };
 

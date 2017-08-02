@@ -36,32 +36,34 @@
 #include "utils/make_shared.h"
 
 namespace remote_control {
-using functional_modules::MobileFunctionID;
+using functional_modules::RCFunctionID;
 namespace {
-std::map<MobileFunctionID, std::string> GenerateAPINames() {
-  std::map<MobileFunctionID, std::string> result;
-  result.insert(std::make_pair<MobileFunctionID, std::string>(
-      MobileFunctionID::BUTTON_PRESS, "ButtonPress"));
-  result.insert(std::make_pair<MobileFunctionID, std::string>(
-      MobileFunctionID::GET_INTERIOR_VEHICLE_DATA, "GetInteriorVehicleData"));
-  result.insert(std::make_pair<MobileFunctionID, std::string>(
-      MobileFunctionID::SET_INTERIOR_VEHICLE_DATA, "SetInteriorVehicleData"));
-  result.insert(std::make_pair<MobileFunctionID, std::string>(
-      MobileFunctionID::ON_INTERIOR_VEHICLE_DATA, "OnInteriorVehicleData"));
+std::map<RCFunctionID, std::string> GenerateAPINames() {
+  std::map<RCFunctionID, std::string> result;
+  result.insert(std::make_pair<RCFunctionID, std::string>(
+      RCFunctionID::BUTTON_PRESS, "ButtonPress"));
+  result.insert(std::make_pair<RCFunctionID, std::string>(
+      RCFunctionID::GET_INTERIOR_VEHICLE_DATA, "GetInteriorVehicleData"));
+  result.insert(std::make_pair<RCFunctionID, std::string>(
+      RCFunctionID::SET_INTERIOR_VEHICLE_DATA, "SetInteriorVehicleData"));
+  result.insert(std::make_pair<RCFunctionID, std::string>(
+      RCFunctionID::ON_INTERIOR_VEHICLE_DATA, "OnInteriorVehicleData"));
+  result.insert(std::make_pair<RCFunctionID, std::string>(
+      RCFunctionID::ON_REMOTE_CONTROL_SETTINGS, "OnRemoteControlSettingd"));
   return result;
 }
 }
 
 uint32_t MessageHelper::next_correlation_id_ = 1;
-const std::map<MobileFunctionID, std::string> MessageHelper::kMobileAPINames =
+const std::map<RCFunctionID, std::string> MessageHelper::kMobileAPINames =
     GenerateAPINames();
 
 uint32_t MessageHelper::GetNextRCCorrelationID() {
   return next_correlation_id_++;
 }
 
-const std::string MessageHelper::GetMobileAPIName(MobileFunctionID func_id) {
-  std::map<MobileFunctionID, std::string>::const_iterator it =
+const std::string MessageHelper::GetMobileAPIName(RCFunctionID func_id) {
+  std::map<RCFunctionID, std::string>::const_iterator it =
       kMobileAPINames.find(func_id);
   if (kMobileAPINames.end() != it) {
     return it->second;
@@ -136,6 +138,20 @@ application_manager::MessagePtr MessageHelper::CreateHmiRequest(
   message_to_send->set_message_type(application_manager::MessageType::kRequest);
 
   return message_to_send;
+}
+
+hmi_apis::Common_RCAccessMode::eType MessageHelper::AccessModeFromString(
+    const std::string& access_mode) {
+  if (enums_value::kAutoAllow == access_mode) {
+    return hmi_apis::Common_RCAccessMode::AUTO_ALLOW;
+  }
+  if (enums_value::kAutoDeny == access_mode) {
+    return hmi_apis::Common_RCAccessMode::AUTO_DENY;
+  }
+  if (enums_value::kAskDriver == access_mode) {
+    return hmi_apis::Common_RCAccessMode::ASK_DRIVER;
+  }
+  return hmi_apis::Common_RCAccessMode::INVALID_ENUM;
 }
 
 }  // namespace remote_control

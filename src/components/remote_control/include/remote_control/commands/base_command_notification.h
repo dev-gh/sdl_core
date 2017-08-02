@@ -90,9 +90,9 @@ class BaseCommandNotification : public Command {
   virtual void Execute() = 0;
 
   /**
-   * @brief executes specific message validation logic of children classes
+   * @brief Validates notification by xml schema
    */
-  virtual bool Validate() = 0;
+  virtual bool Validate();
 
   virtual std::string ModuleType(const Json::Value& message);
   virtual std::vector<std::string> ControlData(const Json::Value& message);

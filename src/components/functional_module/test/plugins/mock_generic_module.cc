@@ -1,7 +1,7 @@
 #include "mock_generic_module.h"
 
 using functional_modules::GenericModule;
-using functional_modules::MobileFunctionID;
+using functional_modules::RCFunctionID;
 using functional_modules::PluginInfo;
 
 using ::testing::_;
@@ -11,7 +11,7 @@ MockGenericModule::MockGenericModule() : GenericModule(19) {
   PluginInfo info;
   info.name = "MockGenericModule";
   info.version = 1;
-  info.mobile_function_list.push_back(static_cast<MobileFunctionID>(101));
+  info.rc_function_list.push_back(static_cast<RCFunctionID>(101));
   info.hmi_function_list.push_back("HMI-Func-1");
 
   EXPECT_CALL(*this, GetPluginInfo()).Times(2).WillRepeatedly(Return(info));

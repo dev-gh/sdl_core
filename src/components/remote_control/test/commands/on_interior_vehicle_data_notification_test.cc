@@ -45,7 +45,7 @@
 #include "utils/shared_ptr.h"
 #include "utils/make_shared.h"
 
-using functional_modules::MobileFunctionID;
+using functional_modules::RCFunctionID;
 using application_manager::ServicePtr;
 
 using application_manager::MockService;
@@ -98,7 +98,7 @@ class OnInteriorVehicleDataNotificationTest : public ::testing::Test {
   application_manager::MessagePtr CreateBasicMessage() {
     application_manager::MessagePtr message = utils::MakeShared<Message>(
         MessagePriority::FromServiceType(protocol_handler::ServiceType::kRpc));
-    message->set_function_id(MobileFunctionID::ON_INTERIOR_VEHICLE_DATA);
+    message->set_function_id(RCFunctionID::ON_INTERIOR_VEHICLE_DATA);
     message->set_function_name("OnInteriorVehicleData");
     message->set_json_message(kJson);
     return message;

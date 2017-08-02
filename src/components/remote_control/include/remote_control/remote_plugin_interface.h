@@ -118,7 +118,7 @@ class RemotePluginInterface : public functional_modules::GenericModule {
 
   virtual RCPluginEventDispatcher& event_dispatcher() = 0;
 
-  virtual ResourceAllocationManager& resource_allocator_manager() = 0;
+  virtual ResourceAllocationManager& resource_allocation_manager() = 0;
 
  protected:
   /**

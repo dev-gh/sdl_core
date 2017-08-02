@@ -140,6 +140,10 @@ std::string BaseCommandNotification::ModuleType(const Json::Value& message) {
   return "";
 }
 
+bool BaseCommandNotification::Validate() {
+  return true;
+}
+
 std::vector<std::string> BaseCommandNotification::ControlData(
     const Json::Value& message) {
   return std::vector<std::string>();

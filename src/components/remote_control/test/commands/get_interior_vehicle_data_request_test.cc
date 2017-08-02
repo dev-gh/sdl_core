@@ -45,7 +45,7 @@
 #include "utils/shared_ptr.h"
 #include "utils/make_shared.h"
 
-using functional_modules::MobileFunctionID;
+using functional_modules::RCFunctionID;
 using application_manager::ServicePtr;
 
 using application_manager::MockService;
@@ -128,7 +128,7 @@ class GetInteriorVehicleDataRequestTest : public ::testing::Test {
     application_manager::MessagePtr message = utils::MakeShared<Message>(
         MessagePriority::FromServiceType(protocol_handler::ServiceType::kRpc));
     message->set_connection_key(kConnectionKey);
-    message->set_function_id(MobileFunctionID::GET_INTERIOR_VEHICLE_DATA);
+    message->set_function_id(RCFunctionID::GET_INTERIOR_VEHICLE_DATA);
     message->set_function_name("GetInteriorVehicleData");
     return message;
   }
@@ -148,7 +148,7 @@ TEST_F(GetInteriorVehicleDataRequestTest,
   application_manager::MessagePtr mobile_message = CreateBasicMessage();
   mobile_message->set_json_message(kValidMobileRequest);
   // Expectations
-  EXPECT_CALL(mock_module_, service()).WillOnce(Return(mock_service_));
+  EXPECT_CALL(mock_module_, service()).Times(2).WillOnce(Return(mock_service_));
   EXPECT_CALL(*mock_service_, GetApplication(mobile_message->connection_key()))
       .WillOnce(Return(mock_app_));
   EXPECT_CALL(*mock_service_, ValidateMessageBySchema(*mobile_message))

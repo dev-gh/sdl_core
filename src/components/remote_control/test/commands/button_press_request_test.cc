@@ -46,7 +46,7 @@
 #include "utils/shared_ptr.h"
 #include "utils/make_shared.h"
 
-using functional_modules::MobileFunctionID;
+using functional_modules::RCFunctionID;
 using application_manager::ServicePtr;
 
 using application_manager::MockService;
@@ -96,7 +96,7 @@ class ButtonPressRequestTest : public ::testing::Test {
       , rc_app_extention_(
             utils::MakeShared<remote_control::RCAppExtension>(kModuleId)) {
     ON_CALL(mock_module_, service()).WillByDefault(Return(mock_service_));
-    ON_CALL(mock_module_, resource_allocator_manager())
+    ON_CALL(mock_module_, resource_allocation_manager())
         .WillByDefault(ReturnRef(mock_allocation_manager_));
     ON_CALL(*mock_service_, GetApplication(kAppId))
         .WillByDefault(Return(mock_app_));
@@ -114,7 +114,7 @@ class ButtonPressRequestTest : public ::testing::Test {
   application_manager::MessagePtr CreateBasicMessage() {
     application_manager::MessagePtr message = utils::MakeShared<Message>(
         MessagePriority::FromServiceType(protocol_handler::ServiceType::kRpc));
-    message->set_function_id(MobileFunctionID::BUTTON_PRESS);
+    message->set_function_id(RCFunctionID::BUTTON_PRESS);
     message->set_function_name(
         MessageHelper::GetMobileAPIName(functional_modules::BUTTON_PRESS));
     message->set_connection_key(kAppId);

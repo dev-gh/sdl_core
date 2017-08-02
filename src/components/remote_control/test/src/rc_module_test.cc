@@ -44,7 +44,7 @@
 
 using functional_modules::PluginInfo;
 using functional_modules::ProcessResult;
-using functional_modules::MobileFunctionID;
+using functional_modules::RCFunctionID;
 using application_manager::ServicePtr;
 
 using application_manager::MockService;
@@ -126,7 +126,7 @@ TEST_F(RCModuleTest, ProcessMessageWrongMessage) {
 }
 
 TEST_F(RCModuleTest, ProcessMessageEmptyapps_List) {
-  message_->set_function_id(MobileFunctionID::ON_INTERIOR_VEHICLE_DATA);
+  message_->set_function_id(RCFunctionID::ON_INTERIOR_VEHICLE_DATA);
   message_->set_function_name("OnInteriorVehicleData");
 
   std::string json =
@@ -145,7 +145,7 @@ TEST_F(RCModuleTest, ProcessMessageEmptyapps_List) {
 }
 
 TEST_F(RCModuleTest, ProcessMessagePass) {
-  message_->set_function_id(MobileFunctionID::ON_INTERIOR_VEHICLE_DATA);
+  message_->set_function_id(RCFunctionID::ON_INTERIOR_VEHICLE_DATA);
 
   std::string json =
       "{ \"jsonrpc\": \"2.0\",\"method\": \"RC.OnInteriorVehicleData\",\

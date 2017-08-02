@@ -138,6 +138,7 @@ void MessageBrokerAdapter::SubscribeTo() {
   MessageBrokerController::subscribeTo("BasicCommunication.OnEventChanged");
   MessageBrokerController::subscribeTo("RC.OnDeviceRankChanged");
   MessageBrokerController::subscribeTo("RC.OnInteriorVehicleData");
+  MessageBrokerController::subscribeTo("RC.OnRemoteControlSettings");
 
   LOG4CXX_INFO(logger_, "Subscribed to notifications.");
 }
