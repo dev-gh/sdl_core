@@ -90,6 +90,19 @@ class BaseCommandRequest
   application_manager::MessagePtr CreateHmiRequest(
       const char* function_id, const Json::Value& message_params);
 
+  /**
+   * @brief Prepares response for sending to mobile
+   * Adds necessary fields to message
+   * @param success true if successful; false, if failed
+   * @param result_code Mobile result code in string ("SUCCESS", "INVALID_DATA",
+   * e.t.c)
+   * @param info Provides additional human readable info regarding the
+   *result(may be empty)
+   */
+  void PrepareResponse(const bool success,
+                       const char* result_code,
+                       const std::string& info);
+
  protected:
   application_manager::MessagePtr message_;
   Json::Value response_params_;
@@ -125,15 +138,14 @@ class BaseCommandRequest
       const hmi_apis::Common_Result::eType& hmi_code) const;
 
   /**
-   * @brief Creates Mobile response
-   *
+   * @brief Sends Mobile response
    * @param success true if successful; false, if failed
    * @param result_code Mobile result code in string ("SUCCESS", "INVALID_DATA",
    *e.t.c)
    * @param info Provides additional human readable info regarding the
    *result(may be empty)
    */
-  void SendResponse(bool success,
+  void SendResponse(const bool success,
                     const char* result_code,
                     const std::string& info);
 

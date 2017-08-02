@@ -63,13 +63,14 @@ BaseCommandRequest::~BaseCommandRequest() {
 
 void BaseCommandRequest::OnTimeout() {
   LOG4CXX_AUTO_TRACE(logger_);
-  SendResponse(false, result_codes::kTimedOut, "Request timeout expired.");
+  PrepareResponse(
+      false, result_codes::kGenericError, "Request timeout expired.");
+  rc_module_.SendTimeoutResponseToMobile(message_);
 }
 
-void BaseCommandRequest::SendResponse(bool success,
-                                      const char* result_code,
-                                      const std::string& info) {
-  LOG4CXX_AUTO_TRACE(logger_);
+void BaseCommandRequest::PrepareResponse(const bool success,
+                                         const char* result_code,
+                                         const std::string& info) {
   message_->set_message_type(application_manager::MessageType::kResponse);
   Json::Value msg_params;
 
@@ -78,9 +79,7 @@ void BaseCommandRequest::SendResponse(bool success,
   }
 
   msg_params[kSuccess] = success;
-  const bool is_timeout = (0 == strcmp(result_code, result_codes::kTimedOut));
-  msg_params[kResultCode] =
-      is_timeout ? result_codes::kGenericError : result_code;
+  msg_params[kResultCode] = result_code;
   if (!info.empty()) {
     msg_params[kInfo] = info;
   }
@@ -88,11 +87,14 @@ void BaseCommandRequest::SendResponse(bool success,
   Json::FastWriter writer;
   std::string params = writer.write(msg_params);
   message_->set_json_message(params);
-  if (is_timeout) {
-    rc_module_.SendTimeoutResponseToMobile(message_);
-  } else {
-    rc_module_.SendResponseToMobile(message_);
-  }
+}
+
+void BaseCommandRequest::SendResponse(const bool success,
+                                      const char* result_code,
+                                      const std::string& info) {
+  LOG4CXX_AUTO_TRACE(logger_);
+  PrepareResponse(success, result_code, info);
+  rc_module_.SendResponseToMobile(message_);
 }
 
 struct OnDriverAnswerCallback : AskDriverCallBack {
@@ -110,9 +112,8 @@ struct OnDriverAnswerCallback : AskDriverCallBack {
       , module_type_(module_type)
       , app_id_(app_id) {}
 
-  void on_event(
-      const rc_event_engine::Event<application_manager::MessagePtr,
-                                   std::string>& event) OVERRIDE FINAL {
+  void on_event(const rc_event_engine::Event<application_manager::MessagePtr,
+                                             std::string>& event) FINAL {
     LOG4CXX_AUTO_TRACE(logger_);
     application_manager::Message& hmi_response = *(event.event_message());
     const application_manager::MessageValidationResult validate_result =
