@@ -191,10 +191,13 @@ void SetInteriorVehicleDataRequest::OnEvent(
   std::string result_code;
   std::string info;
 
-  const bool is_response_successful = ParseResultCode(value, result_code, info);
+  const bool is_response_successful =
+      validate_result && ParseResultCode(value, result_code, info);
 
   if (is_response_successful) {
     response_params_[kModuleData] = value[kResult][kModuleData];
+  } else if (remote_control::result_codes::kReadOnly != result_code) {
+    result_code = result_codes::kGenericError;
   }
   SendResponse(is_response_successful, result_code.c_str(), info);
 }
