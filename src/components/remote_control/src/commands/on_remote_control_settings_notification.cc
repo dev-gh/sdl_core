@@ -80,11 +80,16 @@ void OnRemoteControlSettingsNotification::DisallowRCFunctionality() {
 
 void OnRemoteControlSettingsNotification::Execute() {
   LOG4CXX_AUTO_TRACE(logger_);
+  const Json::Value value =
+      MessageHelper::StringToValue(message()->json_message());
 
-  application_manager::MessagePtr msg = message();
-  const Json::Value value = MessageHelper::StringToValue(msg->json_message());
-
-  const bool is_allowed = value.get(message_params::kAllowed, true).asBool();
+  if (!value.isMember(message_params::kAllowed)) {
+    LOG4CXX_DEBUG(logger_,
+                  "Notification is ignored due to \"allow\" parameter absense");
+    LOG4CXX_DEBUG(logger_, "RC Functionality remains unchanged");
+    return;
+  }
+  const bool is_allowed = value[message_params::kAllowed].asBool();
   if (is_allowed) {
     LOG4CXX_DEBUG(logger_, "Allowing RC Functionality");
     const std::string access_mode =
