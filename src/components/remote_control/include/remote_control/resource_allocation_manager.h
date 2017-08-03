@@ -1,0 +1,80 @@
+#ifndef SRC_COMPONENTS_REMOTE_CONTROL_INCLUDE_REMOTE_CONTROL_RESOURCE_ALLOCATION_H
+#define SRC_COMPONENTS_REMOTE_CONTROL_INCLUDE_REMOTE_CONTROL_RESOURCE_ALLOCATION_H
+#include <string>
+#include "utils/macro.h"
+#include "utils/shared_ptr.h"
+#include "interfaces/HMI_API.h"
+#include "remote_control/event_engine/event.h"
+
+namespace remote_control {
+
+/**
+ * Enum for list of results of allocation resources
+ */
+namespace AcquireResult {
+enum eType { ALLOWED = 0, IN_USE, ASK_DRIVER, REJECTED };
+}
+
+/**
+ * @brief The AskDriverCallBack class callback for GetInteriourConsent response
+ */
+class AskDriverCallBack
+    : public rc_event_engine::EventObserver<application_manager::MessagePtr,
+                                            std::string> {
+ public:
+  virtual ~AskDriverCallBack() {}
+};
+
+typedef utils::SharedPtr<AskDriverCallBack> AskDriverCallBackPtr;
+
+class ResourceAllocationManager {
+ public:
+  /**
+   * @brief AcquireResource acquires resource by application
+   * @param module_type resource to acquire
+   * @param app_id application that acquire resource
+   * @return ALLOWED if resource acquired \
+   *         IN_USE  if subscription is not allowed
+   *         ASK_DRIVER if driver confirmation is required
+   */
+  virtual AcquireResult::eType AcquireResource(const std::string& module_type,
+                                               const uint32_t app_id) = 0;
+
+  /**
+   * @brief AcquireResource forces acquiring resource by application
+   * @param module_type resource to acquire
+   * @param app_id application that acquire resource
+   */
+  virtual void ForceAcquireResource(const std::string& module_type,
+                                    const uint32_t app_id) = 0;
+
+  /**
+   * @brief OnDriverDisallowed callback for rejecting acquiring resource
+   * @param module_type resource type
+   * @param app_id application id
+   */
+  virtual void OnDriverDisallowed(const std::string& module_type,
+                                  const uint32_t app_id) = 0;
+  /**
+   * @brief AskDriver send GetInteriorConsent request to HMI for acquiring
+   * resource
+   * @param module_type resource to acquire
+   * @param app_id application that acquire resource
+   * @param callback will be executed on OnInteriorConsent response
+   */
+  virtual void AskDriver(const std::string& module_type,
+                         const uint32_t app_id,
+                         AskDriverCallBackPtr callback) = 0;
+
+  /**
+   * @brief Set current access mode for acquiring resource
+   * @param access_mode
+   */
+  virtual void SetAccessMode(
+      const hmi_apis::Common_RCAccessMode::eType access_mode) = 0;
+
+  virtual ~ResourceAllocationManager() = 0;
+};
+
+}  // namespace remote_control
+#endif  // SRC_COMPONENTS_REMOTE_CONTROL_INCLUDE_REMOTE_CONTROL_RESOURCE_ALLOCATION_H
