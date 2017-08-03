@@ -54,10 +54,9 @@ OnRemoteControlSettingsNotification::OnRemoteControlSettingsNotification(
 void UnsubscribeFromInteriorVehicleDataForAllModules(
     RCAppExtensionPtr extension) {
   LOG4CXX_AUTO_TRACE(logger_);
-  const Json::Value climate =
-      MessageHelper::StringToValue(enums_value::kClimate);
+  const Json::Value climate(enums_value::kClimate);
   extension->UnsubscribeFromInteriorVehicleData(climate);
-  const Json::Value radio = MessageHelper::StringToValue(enums_value::kRadio);
+  const Json::Value radio(enums_value::kRadio);
   extension->UnsubscribeFromInteriorVehicleData(radio);
 }
 
@@ -87,6 +86,7 @@ void OnRemoteControlSettingsNotification::Execute() {
 
   const bool is_allowed = value.get(message_params::kAllowed, true).asBool();
   if (is_allowed) {
+    LOG4CXX_DEBUG(logger_, "Allowing RC Functionality");
     const std::string access_mode =
         value.get(message_params::kAccessMode, enums_value::kAutoAllow)
             .asString();
@@ -95,8 +95,10 @@ void OnRemoteControlSettingsNotification::Execute() {
         MessageHelper::AccessModeFromString(access_mode);
     ResourceAllocationManager& allocation_manager =
         rc_module_.resource_allocation_manager();
+    LOG4CXX_DEBUG(logger_, "Setting up access mode : " << access_mode);
     allocation_manager.SetAccessMode(access_mode_);
   } else {
+    LOG4CXX_DEBUG(logger_, "Disallowing RC Functionality");
     DisallowRCFunctionality();
   }
 }
