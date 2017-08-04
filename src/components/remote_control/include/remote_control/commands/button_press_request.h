@@ -71,14 +71,14 @@ class ButtonPressRequest : public BaseCommandRequest {
    * @param module_type Resource name
    * @return True if free, otherwise - false
    */
-  bool IsResourceFree(const std::string& module_type) const OVERRIDE FINAL;
+  bool IsResourceFree(const std::string& module_type) const FINAL;
 
   /**
    * @brief SetResourceState changes state of resource
    * @param state State to set for resource
    */
   void SetResourceState(const Json::Value& message,
-                        const ResourceState::eType state) OVERRIDE FINAL;
+                        const ResourceState::eType state) FINAL;
 
   /**
    * @brief Interface method that is called whenever new event received

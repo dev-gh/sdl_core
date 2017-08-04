@@ -102,9 +102,11 @@ void ResourceAllocationManagerImpl::SetResourceState(
       allocated_resources_.find(module_type);
 
   DCHECK_OR_RETURN_VOID(allocated_resources_.end() != allocated_it)
-  LOG4CXX_DEBUG(logger_, "Resource " << module_type << " is acquired.");
-  LOG4CXX_DEBUG(logger_, "Owner application id is " << allocated_it->second);
-  LOG4CXX_DEBUG(logger_, "Changing application id is " << app_id);
+  LOG4CXX_DEBUG(logger_,
+                "Resource " << module_type << " is acquired."
+                            << " Owner application id is "
+                            << allocated_it->second
+                            << " Changing application id is " << app_id);
   DCHECK_OR_RETURN_VOID(app_id == allocated_it->second);
 
   resources_state_[module_type] = state;
@@ -119,7 +121,6 @@ bool ResourceAllocationManagerImpl::IsResourceFree(
 
   if (resources_state_.end() == resource) {
     LOG4CXX_DEBUG(logger_, "Resource " << module_type << " is free.");
-
     return true;
   }
 

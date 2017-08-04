@@ -17,9 +17,9 @@ class ResourceAllocationManagerImpl : public ResourceAllocationManager {
 
   void SetResourceState(const std::string& module_type,
                         const uint32_t app_id,
-                        const ResourceState::eType state) OVERRIDE FINAL;
+                        const ResourceState::eType state) FINAL;
 
-  bool IsResourceFree(const std::string& module_type) const OVERRIDE FINAL;
+  bool IsResourceFree(const std::string& module_type) const FINAL;
 
   void AskDriver(const std::string& module_type,
                  const uint32_t hmi_app_id,

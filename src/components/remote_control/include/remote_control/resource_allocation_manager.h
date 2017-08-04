@@ -23,13 +23,6 @@ enum eType { FREE = 0, BUSY };
 }
 
 /**
- * Enum contains list of access modes
- */
-namespace AccessMode {
-enum eType { AUTO_ALLOW = 0, AUTO_DENY, ASK_DRIVER };
-}  // AccessMode
-
-/**
  * @brief The AskDriverCallBack class callback for GetInteriourConsent response
  */
 class AskDriverCallBack
