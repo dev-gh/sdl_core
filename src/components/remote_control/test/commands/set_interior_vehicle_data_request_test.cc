@@ -177,11 +177,19 @@ TEST_F(SetInteriorVehicleDataRequestTest,
   EXPECT_CALL(*mock_service_, GetNextCorrelationID())
       .WillOnce(Return(kCorrelationId));
 
+  const std::string resource = "CLIMATE";
+
+  EXPECT_CALL(mock_allocation_manager_, IsResourceFree(resource))
+      .WillOnce(Return(true));
+  EXPECT_CALL(mock_allocation_manager_, AcquireResource(resource, kAppId))
+      .WillOnce(Return(remote_control::AcquireResult::ALLOWED));
+  EXPECT_CALL(
+      mock_allocation_manager_,
+      SetResourceState(resource, kAppId, remote_control::ResourceState::BUSY));
+
   application_manager::MessagePtr result_msg;
   EXPECT_CALL(*mock_service_, SendMessageToHMI(_))
       .WillOnce(SaveArg<0>(&result_msg));
-  EXPECT_CALL(mock_allocation_manager_, AcquireResource("CLIMATE", kAppId))
-      .WillOnce(Return(remote_control::AcquireResult::ALLOWED));
 
   // Act
   remote_control::request_controller::MobileRequestPtr command =
@@ -237,11 +245,19 @@ TEST_F(
   EXPECT_CALL(*mock_service_, GetNextCorrelationID())
       .WillOnce(Return(kCorrelationId));
 
+  const std::string resource = "CLIMATE";
+
+  EXPECT_CALL(mock_allocation_manager_, IsResourceFree(resource))
+      .WillOnce(Return(true));
+  EXPECT_CALL(mock_allocation_manager_, AcquireResource(resource, kAppId))
+      .WillOnce(Return(remote_control::AcquireResult::ALLOWED));
+  EXPECT_CALL(
+      mock_allocation_manager_,
+      SetResourceState(resource, kAppId, remote_control::ResourceState::BUSY));
+
   application_manager::MessagePtr result_msg;
   EXPECT_CALL(*mock_service_, SendMessageToHMI(_))
       .WillOnce(SaveArg<0>(&result_msg));
-  EXPECT_CALL(mock_allocation_manager_, AcquireResource("CLIMATE", kAppId))
-      .WillOnce(Return(remote_control::AcquireResult::ALLOWED));
 
   // Act
   remote_control::request_controller::MobileRequestPtr command =

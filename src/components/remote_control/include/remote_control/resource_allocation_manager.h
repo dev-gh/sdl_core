@@ -16,6 +16,13 @@ enum eType { ALLOWED = 0, IN_USE, ASK_DRIVER, REJECTED };
 }
 
 /**
+ * Defines states of acquired resource
+ */
+namespace ResourceState {
+enum eType { FREE = 0, BUSY };
+}
+
+/**
  * @brief The AskDriverCallBack class callback for GetInteriourConsent response
  */
 class AskDriverCallBack
@@ -39,6 +46,24 @@ class ResourceAllocationManager {
    */
   virtual AcquireResult::eType AcquireResource(const std::string& module_type,
                                                const uint32_t app_id) = 0;
+
+  /**
+   * @brief SetResourceState changes resource state. Resource must be acquired
+   * beforehand.
+   * @param module_type Resource to change its state
+   * @param app_id Application aquired resource before
+   * @param state State to set for resource
+   */
+  virtual void SetResourceState(const std::string& module_type,
+                                const uint32_t app_id,
+                                const ResourceState::eType state) = 0;
+
+  /**
+   * @brief IsResourceFree check resource state
+   * @param module_type Resource name
+   * @return True if free, otherwise - false
+   */
+  virtual bool IsResourceFree(const std::string& module_type) const = 0;
 
   /**
    * @brief AcquireResource forces acquiring resource by application

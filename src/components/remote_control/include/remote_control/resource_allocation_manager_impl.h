@@ -14,6 +14,13 @@ class ResourceAllocationManagerImpl : public ResourceAllocationManager {
 
   AcquireResult::eType AcquireResource(const std::string& module_type,
                                        const uint32_t app_id) OVERRIDE FINAL;
+
+  void SetResourceState(const std::string& module_type,
+                        const uint32_t app_id,
+                        const ResourceState::eType state) FINAL;
+
+  bool IsResourceFree(const std::string& module_type) const FINAL;
+
   void AskDriver(const std::string& module_type,
                  const uint32_t hmi_app_id,
                  AskDriverCallBackPtr callback) OVERRIDE FINAL;
@@ -31,8 +38,19 @@ class ResourceAllocationManagerImpl : public ResourceAllocationManager {
  private:
   bool IsModuleTypeRejected(const std::string& module_type,
                             const uint32_t app_id);
+
+  /**
+   * @brief AllocatedResources contains link between resource and application
+   * owning that resource
+   */
   typedef std::map<std::string, uint32_t> AllocatedResources;
-  std::map<std::string, uint32_t> allocated_resources_;
+  AllocatedResources allocated_resources_;
+
+  /**
+   * @brief ResourcesState contains states of ALLOCATED resources
+   */
+  typedef std::map<std::string, ResourceState::eType> ResourcesState;
+  ResourcesState resources_state_;
 
   /**
    * @brief RejectedResources type for connecting list of resources rejected by

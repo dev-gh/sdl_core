@@ -120,6 +120,22 @@ AcquireResult::eType SetInteriorVehicleDataRequest::AcquireResource(
       ModuleType(message), app()->app_id());
 }
 
+bool SetInteriorVehicleDataRequest::IsResourceFree(
+    const std::string& module_type) const {
+  return rc_module_.resource_allocation_manager().IsResourceFree(module_type);
+}
+
+void SetInteriorVehicleDataRequest::SetResourceState(
+    const Json::Value& message, const ResourceState::eType state) {
+  const std::string& module_type = ModuleType(message);
+  const uint32_t app_id = app()->app_id();
+
+  ResourceAllocationManager& allocation_manager =
+      rc_module_.resource_allocation_manager();
+
+  allocation_manager.SetResourceState(module_type, app_id, state);
+}
+
 bool SetInteriorVehicleDataRequest::AreReadOnlyParamsPresent(
     const Json::Value& request_params) {
   LOG4CXX_AUTO_TRACE(logger_);

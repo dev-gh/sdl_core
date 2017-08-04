@@ -110,6 +110,20 @@ AcquireResult::eType ButtonPressRequest::AcquireResource(
   return allocation_manager.AcquireResource(module_type, app_id);
 }
 
+bool ButtonPressRequest::IsResourceFree(const std::string& module_type) const {
+  return rc_module_.resource_allocation_manager().IsResourceFree(module_type);
+}
+
+void ButtonPressRequest::SetResourceState(const Json::Value& message,
+                                          const ResourceState::eType state) {
+  const std::string& module_type = ModuleType(message);
+  const uint32_t app_id = app()->app_id();
+
+  ResourceAllocationManager& allocation_manager =
+      rc_module_.resource_allocation_manager();
+  allocation_manager.SetResourceState(module_type, app_id, state);
+}
+
 void ButtonPressRequest::OnEvent(
     const rc_event_engine::Event<application_manager::MessagePtr, std::string>&
         event) {

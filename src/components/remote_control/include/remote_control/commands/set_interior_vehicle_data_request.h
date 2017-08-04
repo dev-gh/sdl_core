@@ -69,12 +69,26 @@ class SetInteriorVehicleDataRequest : public BaseCommandRequest {
       const Json::Value& message) OVERRIDE FINAL;
 
   /**
+   * @brief IsResourceFree check resource state
+   * @param module_type Resource name
+   * @return True if free, otherwise - false
+   */
+  bool IsResourceFree(const std::string& module_type) const FINAL;
+
+  /**
+   * @brief SetResourceState changes state of resource
+   * @param state State to set for resource
+   */
+  void SetResourceState(const Json::Value& message,
+                        const ResourceState::eType state) FINAL;
+
+  /**
    * @brief Interface method that is called whenever new event received
    *
    * @param event The received event
    */
   void OnEvent(const rc_event_engine::Event<application_manager::MessagePtr,
-                                            std::string>& event);
+                                            std::string>& event) OVERRIDE;
 
   /**
    * @brief Method that check if READ_ONLY parameters present

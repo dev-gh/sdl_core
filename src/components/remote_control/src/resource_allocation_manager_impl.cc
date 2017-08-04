@@ -82,11 +82,52 @@ AcquireResult::eType ResourceAllocationManagerImpl::AcquireResource(
                     "Current access_mode is AUTO_ALLOW. "
                         << "App: " << app_id << " is allowed to acquire "
                         << module_type);
+
       allocated_resources_[module_type] = app_id;
       return AcquireResult::ALLOWED;
     }
     default: { DCHECK_OR_RETURN(false, AcquireResult::IN_USE); }
   }
+}
+
+void ResourceAllocationManagerImpl::SetResourceState(
+    const std::string& module_type,
+    const uint32_t app_id,
+    const ResourceState::eType state) {
+  LOG4CXX_AUTO_TRACE(logger_);
+  LOG4CXX_DEBUG(logger_,
+                "Setting state for " << module_type << " by app_id " << app_id
+                                     << " to state " << state);
+  const AllocatedResources::const_iterator allocated_it =
+      allocated_resources_.find(module_type);
+
+  DCHECK_OR_RETURN_VOID(allocated_resources_.end() != allocated_it)
+  LOG4CXX_DEBUG(logger_,
+                "Resource " << module_type << " is acquired."
+                            << " Owner application id is "
+                            << allocated_it->second
+                            << " Changing application id is " << app_id);
+  DCHECK_OR_RETURN_VOID(app_id == allocated_it->second);
+
+  resources_state_[module_type] = state;
+  LOG4CXX_DEBUG(logger_, "Resource" << module_type << " got state " << state);
+}
+
+bool ResourceAllocationManagerImpl::IsResourceFree(
+    const std::string& module_type) const {
+  LOG4CXX_AUTO_TRACE(logger_);
+  const ResourcesState::const_iterator resource =
+      resources_state_.find(module_type);
+
+  if (resources_state_.end() == resource) {
+    LOG4CXX_DEBUG(logger_, "Resource " << module_type << " is free.");
+    return true;
+  }
+
+  LOG4CXX_DEBUG(logger_,
+                "Resource " << module_type << " state is " << resource->second);
+
+  return ResourceState::FREE == resource->second;
 }
 
 void ResourceAllocationManagerImpl::SetAccessMode(
