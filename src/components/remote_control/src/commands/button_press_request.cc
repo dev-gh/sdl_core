@@ -144,6 +144,7 @@ void ButtonPressRequest::OnEvent(
     is_response_successful = false;
     result_code = result_codes::kGenericError;
   }
+  ResetDriverConsentCallback();
   SendResponse(is_response_successful, result_code.c_str(), info);
 }
 

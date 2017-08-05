@@ -32,6 +32,7 @@ class MockResourceAllocationManager
                     remote_control::AskDriverCallBackPtr callback));
   MOCK_METHOD1(SetAccessMode,
                void(const hmi_apis::Common_RCAccessMode::eType access_mode));
+  MOCK_METHOD0(ResetDriverCallback, void());
   MOCK_METHOD3(SetResourceState,
                void(const std::string& module_type,
                     const uint32_t app_id,

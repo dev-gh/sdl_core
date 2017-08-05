@@ -215,6 +215,7 @@ void SetInteriorVehicleDataRequest::OnEvent(
   } else if (remote_control::result_codes::kReadOnly != result_code) {
     result_code = result_codes::kGenericError;
   }
+  ResetDriverConsentCallback();
   SendResponse(is_response_successful, result_code.c_str(), info);
 }
 

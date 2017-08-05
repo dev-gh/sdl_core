@@ -234,6 +234,7 @@ class BaseCommandRequest
   virtual application_manager::TypeAccess CheckAccess(
       const Json::Value& message);
 
+  void ResetDriverConsentCallback();
   bool auto_allowed() const {
     return auto_allowed_;
   }

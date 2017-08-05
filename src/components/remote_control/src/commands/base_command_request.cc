@@ -63,6 +63,7 @@ BaseCommandRequest::~BaseCommandRequest() {
 
 void BaseCommandRequest::OnTimeout() {
   LOG4CXX_AUTO_TRACE(logger_);
+  ResetDriverConsentCallback();
   PrepareResponse(
       false, result_codes::kGenericError, "Request timeout expired.");
   rc_module_.SendTimeoutResponseToMobile(message_);
@@ -71,6 +72,7 @@ void BaseCommandRequest::OnTimeout() {
 void BaseCommandRequest::PrepareResponse(const bool success,
                                          const char* result_code,
                                          const std::string& info) {
+  LOG4CXX_AUTO_TRACE(logger_);
   message_->set_message_type(application_manager::MessageType::kResponse);
   Json::Value msg_params;
 
@@ -110,7 +112,33 @@ struct OnDriverAnswerCallback : AskDriverCallBack {
       , request_(request)
       , service_(service)
       , module_type_(module_type)
-      , app_id_(app_id) {}
+      , app_id_(app_id)
+      , request_function_name_()
+      , request_correlation_id_(0) {}
+
+  ~OnDriverAnswerCallback() {
+    LOG4CXX_AUTO_TRACE(logger_);
+    LOG4CXX_DEBUG(logger_,
+                  "Unsubsribing from response for function: "
+                      << this->request_function_name_ << " and correlation id: "
+                      << this->request_correlation_id_);
+    request_.rc_module_.event_dispatcher().remove_observer(this);
+  }
+
+  void SubscribeOnResponse(const std::string& function_name,
+                           const int32_t correlation_id) {
+    LOG4CXX_AUTO_TRACE(logger_);
+    DCHECK(0 == request_correlation_id_);
+    DCHECK(request_function_name_.empty());
+    LOG4CXX_DEBUG(logger_,
+                  "Subsribing to response for function: "
+                      << function_name
+                      << " and correlation id: " << correlation_id);
+    request_.rc_module_.event_dispatcher().add_observer(
+        function_name, correlation_id, this);
+    request_correlation_id_ = correlation_id;
+    request_function_name_ = function_name;
+  }
 
   void on_event(const rc_event_engine::Event<application_manager::MessagePtr,
                                              std::string>& event) FINAL {
@@ -177,6 +205,8 @@ struct OnDriverAnswerCallback : AskDriverCallBack {
   application_manager::Service& service_;
   const std::string module_type_;
   const uint32_t app_id_;
+  std::string request_function_name_;
+  int32_t request_correlation_id_;
 };
 
 void BaseCommandRequest::SendMessageToHMI(
@@ -446,6 +476,11 @@ application_manager::TypeAccess BaseCommandRequest::CheckAccess(
   const std::string& module = ModuleType(message);
   return service_->CheckAccess(
       app_->app_id(), module, message_->function_name(), ControlData(message));
+}
+
+void BaseCommandRequest::ResetDriverConsentCallback() {
+  LOG4CXX_AUTO_TRACE(logger_);
+  rc_module_.resource_allocation_manager().ResetDriverCallback();
 }
 
 bool BaseCommandRequest::CheckDriverConsent() {

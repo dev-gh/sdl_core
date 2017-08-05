@@ -30,6 +30,8 @@ class AskDriverCallBack
                                             std::string> {
  public:
   virtual ~AskDriverCallBack() {}
+  virtual void SubscribeOnResponse(const std::string& function_name,
+                                   const int32_t correlation_id) = 0;
 };
 
 typedef utils::SharedPtr<AskDriverCallBack> AskDriverCallBackPtr;
@@ -90,6 +92,8 @@ class ResourceAllocationManager {
   virtual void AskDriver(const std::string& module_type,
                          const uint32_t app_id,
                          AskDriverCallBackPtr callback) = 0;
+
+  virtual void ResetDriverCallback() = 0;
 
   /**
    * @brief Set current access mode for acquiring resource

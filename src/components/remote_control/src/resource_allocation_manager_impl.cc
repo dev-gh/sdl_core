@@ -140,6 +140,7 @@ void ResourceAllocationManagerImpl::AskDriver(const std::string& module_type,
                                               AskDriverCallBackPtr callback) {
   LOG4CXX_AUTO_TRACE(logger_);
   DCHECK(callback);
+  DCHECK(!active_call_back_);
   // Create GetInteriorConsent request to HMI
   Json::Value params;
   params[message_params::kModuleType] = module_type;
@@ -152,14 +153,16 @@ void ResourceAllocationManagerImpl::AskDriver(const std::string& module_type,
 
   LOG4CXX_DEBUG(logger_,
                 "Request to HMI: \n" << message_to_send->json_message());
+  active_call_back_ = callback;
   // Send GetInteriorConsent request to HMI
   rc_plugin_.service()->SendMessageToHMI(message_to_send);
+  active_call_back_->SubscribeOnResponse(message_to_send->function_name(),
+                                         message_to_send->correlation_id());
+}
 
-  // Execute callback on response
-  rc_plugin_.event_dispatcher().add_observer(message_to_send->function_name(),
-                                             message_to_send->correlation_id(),
-                                             callback.get());
-  active_call_back_ = callback;
+void ResourceAllocationManagerImpl::ResetDriverCallback() {
+  LOG4CXX_AUTO_TRACE(logger_);
+  active_call_back_.reset();
 }
 
 ResourceAllocationManagerImpl::~ResourceAllocationManagerImpl() {}

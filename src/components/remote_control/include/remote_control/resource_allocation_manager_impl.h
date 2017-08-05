@@ -25,6 +25,8 @@ class ResourceAllocationManagerImpl : public ResourceAllocationManager {
                  const uint32_t hmi_app_id,
                  AskDriverCallBackPtr callback) OVERRIDE FINAL;
 
+  void ResetDriverCallback() FINAL;
+
   void SetAccessMode(
       const hmi_apis::Common_RCAccessMode::eType access_mode) FINAL;
   ~ResourceAllocationManagerImpl();
