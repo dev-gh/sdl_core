@@ -18,6 +18,7 @@ include_directories (
 set (SOURCES
   src/rc_module_test.cc
   src/rc_app_extension_test.cc
+  src/resource_allocation_manager_impl_test.cc
   ${CMAKE_SOURCE_DIR}/src/components/application_manager/test/mock_message_helper.cc
 )
 
