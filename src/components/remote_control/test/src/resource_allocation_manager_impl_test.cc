@@ -36,6 +36,7 @@
 #include "remote_control/rc_app_extension.h"
 #include "remote_control/rc_module_constants.h"
 #include "remote_control/message_helper.h"
+#include "functional_module/function_ids.h"
 #include "functional_module/module_observer.h"
 #include "application_manager/mock_application.h"
 #include "include/mock_service.h"
@@ -230,14 +231,16 @@ TEST_F(RAManagerTest, AskDriver_ExpectDriverConsentRequestSentToHMI) {
   // Arrange
   EXPECT_CALL(*mock_service_, GetNextCorrelationID())
       .WillOnce(Return(kCorrelationId));
-  EXPECT_CALL(mock_module_, event_dispatcher())
-      .WillOnce(ReturnRef(event_dispatcher_));
   application_manager::MessagePtr result_msg;
   EXPECT_CALL(*mock_service_, SendMessageToHMI(_))
       .WillOnce(SaveArg<0>(&result_msg));
   ResourceAllocationManagerImpl ra_manager(mock_module_);
-  AskDriverCallBackPtr ask_driver_callback_ptr =
-      utils::MakeShared<remote_control_test::MockAskDriverCallBack>();
+  utils::SharedPtr<remote_control_test::MockAskDriverCallBack>
+      ask_driver_callback_ptr =
+          utils::MakeShared<remote_control_test::MockAskDriverCallBack>();
+  EXPECT_CALL(
+      *ask_driver_callback_ptr,
+      SubscribeOnResponse(functional_modules::hmi_api::get_user_consent, _));
   ra_manager.AskDriver(kModuleType1, kAppId1, ask_driver_callback_ptr);
   // Assertions
   const Json::Value message_to_hmi =

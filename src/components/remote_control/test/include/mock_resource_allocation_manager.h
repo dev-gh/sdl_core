@@ -14,6 +14,10 @@ class MockAskDriverCallBack : public remote_control::AskDriverCallBack {
       on_event,
       void(const rc_event_engine::Event<application_manager::MessagePtr,
                                         std::string>& event));
+
+  MOCK_METHOD2(SubscribeOnResponse,
+               void(const std::string& function_name,
+                    const int32_t correlation_id));
 };
 
 class MockResourceAllocationManager
