@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Ford Motor Company
+ * Copyright (c) 2017, Ford Motor Company
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -116,6 +116,7 @@ void MessageBrokerAdapter::SubscribeTo() {
   MessageBrokerController::subscribeTo("VR.OnLanguageChange");
   MessageBrokerController::subscribeTo("TTS.OnLanguageChange");
   MessageBrokerController::subscribeTo("VehicleInfo.OnVehicleData");
+  MessageBrokerController::subscribeTo("VehicleInfo.OnReverseAppsAllowing");
   MessageBrokerController::subscribeTo("Navigation.OnTBTClientState");
   MessageBrokerController::subscribeTo("Navigation.OnWayPointChange");
   MessageBrokerController::subscribeTo("TTS.Started");
@@ -135,9 +136,18 @@ void MessageBrokerAdapter::SubscribeTo() {
   MessageBrokerController::subscribeTo("SDL.OnDeviceStateChanged");
   MessageBrokerController::subscribeTo("SDL.OnPolicyUpdate");
   MessageBrokerController::subscribeTo("BasicCommunication.OnEventChanged");
+  MessageBrokerController::subscribeTo("RC.OnDeviceRankChanged");
+  MessageBrokerController::subscribeTo("RC.OnInteriorVehicleData");
+  MessageBrokerController::subscribeTo("RC.OnRemoteControlSettings");
 
   LOG4CXX_INFO(logger_, "Subscribed to notifications.");
 }
+#ifdef SDL_REMOTE_CONTROL
+void MessageBrokerAdapter::SubscribeToHMINotification(
+    const std::string& hmi_notification) {
+  MessageBrokerController::subscribeTo(hmi_notification);
+}
+#endif
 
 void* MessageBrokerAdapter::SubscribeAndBeginReceiverThread(void* param) {
   PassToThread(threads::Thread::CurrentId());
@@ -171,7 +181,8 @@ void MessageBrokerAdapter::ProcessRecievedFromMB(Json::Value& root) {
               protocol_handler::MessagePriority::kDefault));
   // message->set_message_type()
   message->set_json_message(message_string);
-  message->set_protocol_version(application_manager::ProtocolVersion::kHMI);
+  message->set_protocol_version(
+      protocol_handler::MajorProtocolVersion::PROTOCOL_VERSION_HMI);
 
   if (!handler()) {
     LOG4CXX_WARN(logger_, "handler is NULL");

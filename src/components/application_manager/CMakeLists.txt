@@ -38,6 +38,7 @@ set (AM_MOCK_DIR ${AM_TEST_DIR}/mock)
 include_directories (
   include/
   ${COMPONENTS_DIR}
+  ${COMPONENTS_DIR}/functional_module/include/
   ${COMPONENTS_DIR}/utils/include/
   ${COMPONENTS_DIR}/formatters/include/
   ${COMPONENTS_DIR}/protocol_handler/include/
@@ -331,6 +332,10 @@ set (HMI_COMMANDS_SOURCES
   ${COMMANDS_SOURCE_DIR}/hmi/decrypt_certificate_request.cc
   ${COMMANDS_SOURCE_DIR}/hmi/decrypt_certificate_response.cc
   ${COMMANDS_SOURCE_DIR}/hmi/ui_set_icon_request.cc
+  ${COMMANDS_SOURCE_DIR}/hmi/rc_is_ready_request.cc
+  ${COMMANDS_SOURCE_DIR}/hmi/rc_is_ready_response.cc
+  ${COMMANDS_SOURCE_DIR}/hmi/rc_get_capabilities_request.cc
+  ${COMMANDS_SOURCE_DIR}/hmi/rc_get_capabilities_response.cc
 )
 
 set (HMI_COMMANDS_SOURCES_JSON
@@ -386,6 +391,11 @@ set(PATHS
 )
 collect_sources(SOURCES "${PATHS}" "${EXCLUDE_PATHS}")
 
+if (NOT REMOTE_CONTROL)
+    list(REMOVE_ITEM SOURCES
+        ${COMPONENTS_DIR}/application_manager/src/core_service.cc)
+endif()
+
 set(LIBRARIES
   HMI_API
   MOBILE_API
@@ -398,6 +408,13 @@ set(LIBRARIES
   dbms
   Utils
 )
+
+if(REMOTE_CONTROL)
+    SET (LIBRARIES
+      ${LIBRARIES}
+      FunctionalModule
+    )
+endif(REMOTE_CONTROL)
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
   list(APPEND LIBRARIES sqlite3)

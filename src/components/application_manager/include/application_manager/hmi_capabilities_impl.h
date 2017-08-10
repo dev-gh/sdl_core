@@ -91,6 +91,9 @@ class HMICapabilitiesImpl : public HMICapabilities {
   bool is_ivi_cooperating() const OVERRIDE;
   void set_is_ivi_cooperating(const bool value) OVERRIDE;
 
+  bool is_rc_cooperating() const OVERRIDE;
+  void set_is_rc_cooperating(const bool value) OVERRIDE;
+
   /*
    * @brief Interface used to store information about software version of the
    *target
@@ -442,6 +445,11 @@ class HMICapabilitiesImpl : public HMICapabilities {
 
   const smart_objects::SmartObject* phone_capability() const OVERRIDE;
 
+  void set_rc_capability(
+      const smart_objects::SmartObject& rc_capability) OVERRIDE;
+
+  const smart_objects::SmartObject* rc_capability() const OVERRIDE;
+
   void Init(resumption::LastState* last_state) OVERRIDE;
 
   /*
@@ -497,6 +505,7 @@ class HMICapabilitiesImpl : public HMICapabilities {
   bool is_ui_cooperating_;
   bool is_navi_cooperating_;
   bool is_ivi_cooperating_;
+  bool is_rc_cooperating_;
 
   bool attenuated_supported_;
   hmi_apis::Common_Language::eType ui_language_;
@@ -521,6 +530,7 @@ class HMICapabilitiesImpl : public HMICapabilities {
   std::string ccpu_version_;
   smart_objects::SmartObject* navigation_capability_;
   smart_objects::SmartObject* phone_capability_;
+  smart_objects::SmartObject* rc_capability_;
 
   ApplicationManager& app_mngr_;
   HMILanguageHandler hmi_language_handler_;
