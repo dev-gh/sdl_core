@@ -139,6 +139,7 @@ const char* system_capability_type = "systemCapabilityType";
 const char* system_capabilities = "systemCapabilities";
 const char* navigation_capability = "navigationCapability";
 const char* phone_capability = "phoneCapability";
+const char* rc_capability = "remoteControlCapability";
 const char* device_rank = "deviceRank";
 
 // PutFile
