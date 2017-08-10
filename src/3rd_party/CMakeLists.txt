@@ -283,22 +283,40 @@ if(HMI_DBUS_API)
   add_subdirectory(dbus-cmake)
 endif()
 
-set(BSON_LIBS_DIRECTORY ${3RD_PARTY_INSTALL_PREFIX_ARCH}/lib PARENT_SCOPE)
-set(BSON_INCLUDE_DIRECTORY ${3RD_PARTY_INSTALL_PREFIX}/include PARENT_SCOPE)
-set(EMHASHMAP_INCLUDE_DIRECTORY ${3RD_PARTY_INSTALL_PREFIX}/include PARENT_SCOPE)
-set(EMHASHMAP_LIBS_DIRECTORY ${3RD_PARTY_INSTALL_PREFIX_ARCH}/lib PARENT_SCOPE)
-set(BSON_LIB_SOURCE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bson_c_lib)
+set(FORCE_BSON_REBUILD FALSE CACHE INTERNAL "Force rebuild of bson library" FORCE)
+set(BSON_LIBS_DIRECTORY ${3RD_PARTY_INSTALL_PREFIX}/lib CACHE INTERNAL "Instalation path of bson libraries" FORCE)
+set(BSON_INCLUDE_DIRECTORY ${3RD_PARTY_INSTALL_PREFIX}/include CACHE INTERNAL "Instalation path of bson headers" FORCE)
+set(EMHASHMAP_LIBS_DIRECTORY ${3RD_PARTY_INSTALL_PREFIX}/lib CACHE INTERNAL "Instalation path of emashmap libraries" FORCE)
+set(EMHASHMAP_INCLUDE_DIRECTORY ${3RD_PARTY_INSTALL_PREFIX}/include CACHE INTERNAL "Instalation path of emashmap headers" FORCE)
+set(BSON_LIB_SOURCE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bson_c_lib CACHE INTERNAL "Sources of bson library" FORCE)
 
-include(ExternalProject)
-ExternalProject_Add(libbson
-    GIT_REPOSITORY "http://github.com/smartdevicelink/bson_c_lib.git"
-    GIT_TAG "master"
-    BINARY_DIR ${BSON_LIB_SOURCE_DIRECTORY}
-    DOWNLOAD_DIR ${BSON_LIB_SOURCE_DIRECTORY}
-    SOURCE_DIR ${BSON_LIB_SOURCE_DIRECTORY}
-    CONFIGURE_COMMAND touch aclocal.m4 configure.ac Makefile.am Makefile.in configure && ./configure
-    BUILD_COMMAND make
-    INSTALL_COMMAND sudo make install)
+IF (NOT EXISTS ${BSON_LIBS_DIRECTORY}/libbson.so OR (${FORCE_BSON_REBUILD}))
+  IF (${FORCE_BSON_REBUILD})
+    MESSAGE(INFO "Force rebuild bson lib")
+  endif()
+
+  add_custom_target(clean_bson_build_dir
+    COMMAND git clean -dfx && echo "Clean bson dir"
+    WORKING_DIRECTORY ${BSON_LIB_SOURCE_DIRECTORY}
+    )
+
+  include(ExternalProject)
+  ExternalProject_Add(libbson
+      GIT_REPOSITORY "http://github.com/LuxoftAKutsan/bson_c_lib.git"
+# TODO Change GIT_REPOSITORY to http://github.com/smartdevicelink/bson_c_lib.git
+#      after merge of https://github.com/smartdevicelink/bson_c_lib/pull/2
+      GIT_TAG "master"
+      BINARY_DIR ${BSON_LIB_SOURCE_DIRECTORY}
+      INSTALL_DIR ${3RD_PARTY_INSTALL_PREFIX}
+      DOWNLOAD_DIR ${BSON_LIB_SOURCE_DIRECTORY}
+      SOURCE_DIR ${BSON_LIB_SOURCE_DIRECTORY}
+      CONFIGURE_COMMAND touch aclocal.m4 configure.ac Makefile.am Makefile.in && ./configure --prefix=${3RD_PARTY_INSTALL_PREFIX}
+      BUILD_COMMAND make
+      INSTALL_COMMAND make install
+      DEPENDS clean_bson_build_dir)
+else ()
+  MESSAGE(STATUS "BSON is already installed ${BSON_LIBS_DIRECTORY}")
+endif()
 
 add_custom_target(install-3rd_party
   DEPENDS ${install-3rd_party_logger_var}
