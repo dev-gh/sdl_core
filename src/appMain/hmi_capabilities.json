@@ -306,6 +306,7 @@
                     "moduleName": "primary_climate",
                     "fanSpeedAvailable": true,
                     "desiredTemperatureAvailable": true,
+                    "currentTemperatureAvailable": true,
                     "acEnableAvailable": true,
                     "acMaxEnableAvailable": true,
                     "circulateAirEnableAvailable": true,
