@@ -106,6 +106,19 @@ void BaseCommandRequest::SendResponse(const bool success,
 void BaseCommandRequest::SendMessageToHMI(
     const application_manager::MessagePtr& message_to_send) {
   LOG4CXX_AUTO_TRACE(logger_);
+  using application_manager::HmiInterfaces;
+
+  const bool is_rc_available =
+      service_->IsInterfaceAvailable(HmiInterfaces::HMI_INTERFACE_RC);
+  LOG4CXX_DEBUG(logger_, "HMI interface RC is available: " << is_rc_available);
+  if (!is_rc_available) {
+    const bool success = false;
+    const char* result_code = result_codes::kUnsupportedResource;
+    const std::string info = "Remote control is not supported by system";
+
+    SendResponse(success, result_code, info);
+    return;
+  }
 
   const std::string function_name = message_to_send->function_name();
   const int32_t correlation_id = message_to_send->correlation_id();
@@ -301,19 +314,31 @@ bool BaseCommandRequest::ParseResultCode(const Json::Value& value,
 
 void BaseCommandRequest::Run() {
   LOG4CXX_AUTO_TRACE(logger_);
-  if (Validate()) {
-    LOG4CXX_INFO(logger_, "Request message validated successfully!");
-    if (CheckPolicyPermissions() && CheckDriverConsent()) {
-      if (AqcuireResources()) {
-        Execute();  // run child's logic
-      }
-      // If resource is not aqcuired AqcuireResources method will
-      // either send response to mobile
-      // or send additional request to HMI to ask driver consent
-    }
-  } else {
-    SendResponse(false, result_codes::kInvalidData, "");
+  if (!Validate()) {
+    LOG4CXX_WARN(logger_, "Request message validation failed !");
+    SendResponse(
+        false, result_codes::kInvalidData, "Validation by schema failed");
+    return;
   }
+  LOG4CXX_TRACE(logger_, "Request message validated successfully!");
+  using application_manager::HmiInterfaces;
+  if (!service_->IsInterfaceAvailable(HmiInterfaces::HMI_INTERFACE_RC)) {
+    LOG4CXX_WARN(logger_, "HMI interface RC is not available");
+    SendResponse(false,
+                 result_codes::kUnsupportedResource,
+                 "Remote control is not supported by system");
+    return;
+  }
+  LOG4CXX_TRACE(logger_, "RC interface is available!");
+  if (CheckPolicyPermissions() && CheckDriverConsent()) {
+    if (AqcuireResources()) {
+      Execute();  // run child's logic
+    }
+    // If resource is not aqcuired, AqcuireResources method will either
+    // send response to mobile or 
+    // send additional request to HMI to ask driver consent
+  }
+  // TODO : send error in case if policy permissions failed
 }
 
 bool BaseCommandRequest::CheckPolicyPermissions() {
