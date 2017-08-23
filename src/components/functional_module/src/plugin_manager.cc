@@ -213,16 +213,10 @@ ProcessResult PluginManager::ProcessHMIMessage(
     return ProcessResult::CANNOT_PROCESS;
   }
 
-  const hmi_apis::FunctionID::eType function_id =
-      static_cast<hmi_apis::FunctionID::eType>(msg->function_id());
-
   if (hmi_apis::FunctionID::BasicCommunication_OnExitApplication ==
-      function_id) {
+      static_cast<hmi_apis::FunctionID::eType>(msg->function_id())) {
     OnSDLEvent(functional_modules::SDLEvent::kApplicationExit,
-               msg->connection_key());
-  }
-  if (hmi_apis::FunctionID::SDL_OnAllowSDLFunctionality == function_id) {
-    OnSDLEvent(functional_modules::SDLEvent::kApplicationsDisabled);
+               static_cast<uint32_t>(msg->connection_key()));
   }
 
   ProcessResult result = ProcessResult::CANNOT_PROCESS;
