@@ -70,6 +70,38 @@ TEST_F(PluginManagerTest, ProcessMessagePass) {
   manager->ProcessMessage(message);
 }
 
+TEST_F(PluginManagerTest, SDL_events_triggers_module) {
+  using namespace functional_modules;
+  std::vector<SDLEvent> events;
+  events.push_back(SDLEvent::kApplicationExit);
+  events.push_back(SDLEvent::kApplicationPolicyUpdated);
+  events.push_back(SDLEvent::kApplicationUnregistered);
+  events.push_back(SDLEvent::kApplicationsDisabled);
+
+  std::vector<SDLEvent>::const_iterator ev = events.begin();
+  for (; events.end() != ev; ++ev) {
+    EXPECT_CALL(*module, OnSDLEvent(*ev, _));
+    manager->OnSDLEvent(*ev);
+  }
+}
+
+TEST_F(PluginManagerTest, AppExit_triggers_module_event) {
+  application_manager::MessagePtr message = utils::MakeShared<Message>(
+      protocol_handler::MessagePriority::FromServiceType(
+          protocol_handler::ServiceType::kRpc));
+
+  message->set_protocol_version(MajorProtocolVersion::PROTOCOL_VERSION_HMI);
+  const std::string json = "{\"method\": \"Dummy\"}";
+  message->set_json_message(json);
+
+  message->set_function_id(
+      hmi_apis::FunctionID::BasicCommunication_OnExitApplication);
+  EXPECT_CALL(*module,
+              OnSDLEvent(functional_modules::SDLEvent::kApplicationExit, _));
+
+  EXPECT_EQ(ProcessResult::CANNOT_PROCESS, manager->ProcessHMIMessage(message));
+}
+
 TEST_F(PluginManagerTest, ProcessHMIMessageFail) {
   Message* msg = new Message(protocol_handler::MessagePriority::FromServiceType(
       protocol_handler::ServiceType::kRpc));
