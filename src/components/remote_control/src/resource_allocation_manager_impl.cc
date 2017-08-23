@@ -131,7 +131,8 @@ std::vector<std::string> ResourceAllocationManagerImpl::GetAcquiredResources(
 
   LOG4CXX_DEBUG(logger_,
                 "Application " << application_id << " acquired "
-                               << allocated_resources.size());
+                               << allocated_resources.size()
+                               << " resource(s).");
 
   return allocated_resources;
 }

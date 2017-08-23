@@ -251,15 +251,17 @@ void RemoteControlPlugin::ProcessApplicationPolicyUpdate() {
     const uint32_t application_id = (*app)->app_id();
     Resources acquired_modules =
         resource_allocation_manager_.GetAcquiredResources(application_id);
+    std::sort(acquired_modules.begin(), acquired_modules.end());
 
     Resources allowed_modules;
     service()->GetModuleTypes((*app)->policy_app_id(), &allowed_modules);
+    std::sort(allowed_modules.begin(), allowed_modules.end());
 
     Resources disallowed_modules;
-    std::set_difference(allowed_modules.begin(),
-                        allowed_modules.end(),
-                        acquired_modules.begin(),
+    std::set_difference(acquired_modules.begin(),
                         acquired_modules.end(),
+                        allowed_modules.begin(),
+                        allowed_modules.end(),
                         std::back_inserter(disallowed_modules));
 
     Resources::const_iterator module = disallowed_modules.begin();

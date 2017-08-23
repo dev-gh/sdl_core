@@ -43,6 +43,38 @@ namespace functional_modules {
 
 CREATE_LOGGERPTR_GLOBAL(logger_, "PluginManager")
 
+namespace {
+const std::string ExtractMethodName(application_manager::MessagePtr msg) {
+  Json::Value value;
+  Json::Reader reader;
+  reader.parse(msg->json_message(), value);
+  
+  const char* kMethod = "method";
+  const char* kResult = "result";
+  const char* kError = "error";
+  const char* kData = "data";
+
+  if (value.isMember(kMethod)) {
+    return value.get(kMethod, "").asCString();
+    // Response from HMI
+  }
+  if (value.isMember(kResult)) {
+    const Json::Value& result = value.get(kResult, Json::Value());
+    return result.get(kMethod, "").asCString();
+  }
+  if (value.isMember(kError)) {
+    const Json::Value& error = value.get(kError, Json::Value());
+    const Json::Value& data = error.get(kData, Json::Value());
+    return data.get(kMethod, "").asCString();
+  }
+  LOG4CXX_WARN(logger_,
+               "Message with HMI protocol version can not be handled by "
+               "plugin manager, because required 'method' field was not "
+               "found, or was containing an invalid string.");
+  return std::string();
+}
+} // namespace
+
 typedef std::map<ModuleID, ModulePtr>::iterator PluginsIterator;
 typedef std::map<RCFunctionID, ModulePtr>::iterator PluginFunctionsIterator;
 typedef std::map<HMIFunctionID, ModulePtr>::iterator PluginHMIFunctionsIterator;
@@ -165,60 +197,22 @@ ProcessResult PluginManager::ProcessMessage(
   return result;
 }
 
-const std::string ExtractMethodName(const Json::Value& value) {
-  const char* kMethod = "method";
-  const char* kResult = "result";
-  const char* kError = "error";
-  const char* kData = "data";
-
-  if (value.isMember(kMethod)) {
-    return value.get(kMethod, "").asCString();
-    // Response from HMI
-  }
-  if (value.isMember(kResult)) {
-    const Json::Value& result = value.get(kResult, Json::Value());
-    return result.get(kMethod, "").asCString();
-  }
-  if (value.isMember(kError)) {
-    const Json::Value& error = value.get(kError, Json::Value());
-    const Json::Value& data = error.get(kData, Json::Value());
-    return data.get(kMethod, "").asCString();
-  }
-  LOG4CXX_WARN(logger_,
-               "Message with HMI protocol version can not be handled by "
-               "plugin manager, because required 'method' field was not "
-               "found, or was containing an invalid string.");
-  return std::string();
-}
-
 ProcessResult PluginManager::ProcessHMIMessage(
     application_manager::MessagePtr msg) {
-  DCHECK(msg);
-  if (!msg) {
-    LOG4CXX_ERROR(logger_, "Null pointer message was received.");
-    return ProcessResult::CANNOT_PROCESS;
-  }
-
-  Json::Value value;
-  Json::Reader reader;
-  reader.parse(msg->json_message(), value);
+  DCHECK_OR_RETURN(msg, ProcessResult::CANNOT_PROCESS);
 
   if (protocol_handler::MajorProtocolVersion::PROTOCOL_VERSION_HMI !=
       msg->protocol_version()) {
     return ProcessResult::CANNOT_PROCESS;
   }
-
-  const std::string& msg_method = ExtractMethodName(value);
+  
+  const std::string& msg_method = ExtractMethodName(msg);
   if (msg_method.empty()) {
     return ProcessResult::CANNOT_PROCESS;
   }
-
-  if (hmi_apis::FunctionID::BasicCommunication_OnExitApplication ==
-      static_cast<hmi_apis::FunctionID::eType>(msg->function_id())) {
-    OnSDLEvent(functional_modules::SDLEvent::kApplicationExit,
-               static_cast<uint32_t>(msg->connection_key()));
-  }
-
+  
+  LOG4CXX_DEBUG(logger_, "Parsed method name is " << msg_method);
+  
   ProcessResult result = ProcessResult::CANNOT_PROCESS;
   PluginHMIFunctionsIterator subscribed_plugin_itr =
       hmi_subscribers_.find(msg_method);
