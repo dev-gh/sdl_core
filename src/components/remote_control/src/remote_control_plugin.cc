@@ -243,6 +243,35 @@ void RemoteControlPlugin::NotifyMobiles(
   }
 }
 
+void RemoteControlPlugin::ProcessApplicationPolicyUpdate() {
+  typedef std::vector<application_manager::ApplicationSharedPtr> Apps;
+  Apps app_list = service()->GetApplications(GetModuleID());
+  Apps::const_iterator app = app_list.begin();
+  for (; app_list.end() != app; ++app) {
+    const uint32_t application_id = (*app)->app_id();
+    Resources acquired_modules =
+        resource_allocation_manager_.GetAcquiredResources(application_id);
+    std::sort(acquired_modules.begin(), acquired_modules.end());
+
+    Resources allowed_modules;
+    service()->GetModuleTypes((*app)->policy_app_id(), &allowed_modules);
+    std::sort(allowed_modules.begin(), allowed_modules.end());
+
+    Resources disallowed_modules;
+    std::set_difference(acquired_modules.begin(),
+                        acquired_modules.end(),
+                        allowed_modules.begin(),
+                        allowed_modules.end(),
+                        std::back_inserter(disallowed_modules));
+
+    Resources::const_iterator module = disallowed_modules.begin();
+    for (; disallowed_modules.end() != module; ++module) {
+      resource_allocation_manager_.ReleaseResource(*module, application_id);
+    }
+  }
+  return;
+}
+
 void RemoteControlPlugin::SendResponseToMobile(
     application_manager::MessagePtr msg) {
   LOG4CXX_DEBUG(logger_, "Response to mobile: " << msg->json_message());
@@ -310,17 +339,31 @@ void RemoteControlPlugin::OnAppHMILevelChanged(
   service()->NotifyHMIAboutHMILevel(app, app->hmi_level());
 }
 
-void RemoteControlPlugin::OnUnregisterApplication(const uint32_t app_id) {
-  LOG4CXX_AUTO_TRACE(logger_);
-  resource_allocation_manager_.OnUnregisterApplication(app_id);
-}
-
 RCEventDispatcher& RemoteControlPlugin::event_dispatcher() {
   return event_dispatcher_;
 }
 
 ResourceAllocationManager& RemoteControlPlugin::resource_allocation_manager() {
   return resource_allocation_manager_;
+}
+
+void RemoteControlPlugin::OnSDLEvent(functional_modules::SDLEvent event,
+                                     const uint32_t application_id) {
+  LOG4CXX_AUTO_TRACE(logger_);
+  LOG4CXX_DEBUG(logger_, "Event " << event << " came for " << application_id);
+
+  if (functional_modules::SDLEvent::kApplicationPolicyUpdated == event) {
+    ProcessApplicationPolicyUpdate();
+    return;
+  }
+
+  Resources acquired_modules =
+      resource_allocation_manager_.GetAcquiredResources(application_id);
+
+  Resources::const_iterator module = acquired_modules.begin();
+  for (; acquired_modules.end() != module; ++module) {
+    resource_allocation_manager_.ReleaseResource(*module, application_id);
+  }
 }
 
 }  //  namespace remote_control
