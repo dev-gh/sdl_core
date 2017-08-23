@@ -104,6 +104,9 @@ class RemotePluginInterface : public functional_modules::GenericModule {
 
   virtual ResourceAllocationManager& resource_allocation_manager() = 0;
 
+  virtual void OnSDLEvent(functional_modules::SDLEvent event,
+                          const uint32_t application_id = 0) = 0;
+
  protected:
   /**
    * @brief Remove extension for all applications

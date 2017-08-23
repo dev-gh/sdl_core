@@ -104,6 +104,9 @@ class RemoteControlPlugin : public RemotePluginInterface {
 
   ResourceAllocationManager& resource_allocation_manager() OVERRIDE;
 
+  void OnSDLEvent(functional_modules::SDLEvent event,
+                  const uint32_t application_id = 0) OVERRIDE;
+
  protected:
   /**
    * @brief Remove extension for all applications

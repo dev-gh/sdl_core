@@ -348,10 +348,29 @@ struct HandleApplicationUnregistered {
   }
 };
 
+struct HandleSDLEvent {
+ private:
+  const functional_modules::SDLEvent event_;
+  const uint32_t app_id_;
+
+ public:
+  HandleSDLEvent(functional_modules::SDLEvent e, const uint32_t app_id)
+      : event_(e), app_id_(app_id) {}
+  void operator()(PluginsValueType& p) {
+    p.second->OnSDLEvent(event_, app_id_);
+  }
+};
+
 void PluginManager::OnUnregisterApplication(const uint32_t app_id) {
   LOG4CXX_AUTO_TRACE(logger_);
   std::for_each(
       plugins_.begin(), plugins_.end(), HandleApplicationUnregistered(app_id));
+}
+
+void PluginManager::OnSDLEvent(SDLEvent event, const uint32_t application_id) {
+  LOG4CXX_AUTO_TRACE(logger_);
+  std::for_each(
+      plugins_.begin(), plugins_.end(), HandleSDLEvent(event, application_id));
 }
 
 PluginManager::Modules& PluginManager::plugins() {

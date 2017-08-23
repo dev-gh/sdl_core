@@ -95,6 +95,9 @@ class PluginManager : public ModuleObserver {
    */
   void OnUnregisterApplication(const uint32_t app_id);
 
+  void OnSDLEvent(functional_modules::SDLEvent event,
+                  const uint32_t application_id = 0);
+
   Modules& plugins();
 
  private:

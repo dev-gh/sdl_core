@@ -323,4 +323,39 @@ ResourceAllocationManager& RemoteControlPlugin::resource_allocation_manager() {
   return resource_allocation_manager_;
 }
 
+void RemoteControlPlugin::OnSDLEvent(functional_modules::SDLEvent event,
+                                     const uint32_t application_id) {
+  Resources acquired_modules =
+      resource_allocation_manager_.GetAcquiredResources(application_id);
+
+  if (functional_modules::SDLEvent::kApplicationPolicyUpdated == event) {
+    application_manager::ApplicationSharedPtr app =
+        service()->GetApplication(application_id);
+    if (!app) {
+      return;
+    }
+    Resources allowed_modules;
+    service()->GetModuleTypes(app->policy_app_id(), &allowed_modules);
+
+    Resources disallowed_modules;
+    std::set_difference(allowed_modules.begin(),
+                        allowed_modules.end(),
+                        acquired_modules.begin(),
+                        acquired_modules.end(),
+                        std::back_inserter(disallowed_modules));
+
+    Resources::const_iterator module = disallowed_modules.begin();
+    for (; disallowed_modules.end() != module; ++module) {
+      resource_allocation_manager_.ReleaseResource(*module, application_id);
+    }
+    return;
+  }
+
+  Resources::const_iterator module = acquired_modules.begin();
+  for (; acquired_modules.end() != module; ++module) {
+    resource_allocation_manager_.ReleaseResource(*module, application_id);
+  }
+  return;
+}
+
 }  //  namespace remote_control

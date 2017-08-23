@@ -22,6 +22,8 @@ namespace ResourceState {
 enum eType { FREE = 0, BUSY };
 }
 
+typedef std::vector<std::string> Resources;
+
 class ResourceAllocationManager {
  public:
   /**
@@ -34,6 +36,12 @@ class ResourceAllocationManager {
    */
   virtual AcquireResult::eType AcquireResource(const std::string& module_type,
                                                const uint32_t app_id) = 0;
+
+  virtual bool ReleaseResource(const std::string& module_type,
+                               const uint32_t application_id) = 0;
+
+  virtual Resources GetAcquiredResources(
+      const uint32_t application_id) const = 0;
 
   /**
    * @brief SetResourceState changes resource state. Resource must be acquired

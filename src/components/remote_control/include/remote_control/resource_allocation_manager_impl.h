@@ -17,6 +17,11 @@ class ResourceAllocationManagerImpl : public ResourceAllocationManager {
   AcquireResult::eType AcquireResource(const std::string& module_type,
                                        const uint32_t app_id) OVERRIDE FINAL;
 
+  bool ReleaseResource(const std::string& module_type,
+                       const uint32_t application_id) OVERRIDE;
+
+  Resources GetAcquiredResources(const uint32_t application_id) const FINAL;
+
   void SetResourceState(const std::string& module_type,
                         const uint32_t app_id,
                         const ResourceState::eType state) FINAL;

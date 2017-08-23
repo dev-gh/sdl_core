@@ -42,6 +42,13 @@
 
 namespace functional_modules {
 
+enum SDLEvent {
+  kApplicationExit = 0,
+  kApplicationUnregistered,
+  kApplicationPolicyUpdated,
+  kApplicationsDisabled
+};
+
 enum ProcessResult {
   NONE = -1,
   PROCESSED,
@@ -131,6 +138,8 @@ class GenericModule {
    * @param app_id application id which was unregistered
    */
   virtual void OnUnregisterApplication(const uint32_t app_id) = 0;
+
+  virtual void OnSDLEvent(SDLEvent event, const uint32_t application_id) = 0;
 
  protected:
   explicit GenericModule(ModuleID module_id);

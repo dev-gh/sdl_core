@@ -94,6 +94,48 @@ AcquireResult::eType ResourceAllocationManagerImpl::AcquireResource(
   }
 }
 
+bool ResourceAllocationManagerImpl::ReleaseResource(
+    const std::string& module_type, const uint32_t application_id) {
+  LOG4CXX_AUTO_TRACE(logger_);
+  LOG4CXX_DEBUG(logger_, "Release " << module_type << " by " << application_id);
+  AllocatedResources::const_iterator allocation =
+      allocated_resources_.find(module_type);
+  if (allocated_resources_.end() == allocation) {
+    LOG4CXX_DEBUG(logger_, "Resource " << module_type << " is not allocated.");
+    return false;
+  }
+
+  if (application_id != allocation->second) {
+    LOG4CXX_DEBUG(logger_,
+                  "Resource " << module_type
+                              << " is allocated by different application "
+                              << allocation->second);
+    return false;
+  }
+
+  allocated_resources_.erase(allocation);
+  LOG4CXX_DEBUG(logger_, "Resource " << module_type << " is released.");
+  return true;
+}
+
+std::vector<std::string> ResourceAllocationManagerImpl::GetAcquiredResources(
+    const uint32_t application_id) const {
+  LOG4CXX_AUTO_TRACE(logger_);
+  Resources allocated_resources;
+  AllocatedResources::const_iterator allocation = allocated_resources_.begin();
+  for (; allocated_resources_.end() != allocation; ++allocation) {
+    if (application_id == allocation->second) {
+      allocated_resources.push_back(allocation->first);
+    }
+  }
+
+  LOG4CXX_DEBUG(logger_,
+                "Application " << application_id << " acquired "
+                               << allocated_resources.size());
+
+  return allocated_resources;
+}
+
 void ResourceAllocationManagerImpl::SetResourceState(
     const std::string& module_type,
     const uint32_t app_id,
