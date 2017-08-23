@@ -137,25 +137,32 @@ void PluginManager::UnloadPlugins() {
   dlls_.clear();
 }
 
-void PluginManager::ProcessMessage(application_manager::MessagePtr msg) {
+ProcessResult PluginManager::ProcessMessage(
+    application_manager::MessagePtr msg) {
   DCHECK(msg);
   if (!msg) {
     LOG4CXX_ERROR(logger_, "Null pointer message was received.");
-    return;
+    return ProcessResult::CANNOT_PROCESS;
   }
-  if (protocol_handler::MajorProtocolVersion::PROTOCOL_VERSION_UNKNOWN !=
-          msg->protocol_version() &&
-      protocol_handler::MajorProtocolVersion::PROTOCOL_VERSION_HMI !=
-          msg->protocol_version()) {
-    PluginFunctionsIterator subscribed_plugin_itr =
-        mobile_subscribers_.find(static_cast<RCFunctionID>(msg->function_id()));
-    if (mobile_subscribers_.end() != subscribed_plugin_itr) {
-      if (subscribed_plugin_itr->second->ProcessMessage(msg) !=
-          ProcessResult::PROCESSED) {
-        LOG4CXX_ERROR(logger_, "Failed process message!");
-      }
+
+  protocol_handler::MajorProtocolVersion version = msg->protocol_version();
+  if (protocol_handler::MajorProtocolVersion::PROTOCOL_VERSION_UNKNOWN ==
+          version ||
+      protocol_handler::MajorProtocolVersion::PROTOCOL_VERSION_HMI == version) {
+    return ProcessResult::CANNOT_PROCESS;
+  }
+
+  ProcessResult result = ProcessResult::CANNOT_PROCESS;
+  PluginFunctionsIterator subscribed_plugin_itr =
+      mobile_subscribers_.find(static_cast<RCFunctionID>(msg->function_id()));
+  if (mobile_subscribers_.end() != subscribed_plugin_itr) {
+    result = subscribed_plugin_itr->second->ProcessMessage(msg);
+    if (ProcessResult::PROCESSED != result) {
+      LOG4CXX_ERROR(logger_, "Plugin failed to process message.");
     }
   }
+
+  return result;
 }
 
 const std::string ExtractMethodName(const Json::Value& value) {
@@ -196,76 +203,36 @@ ProcessResult PluginManager::ProcessHMIMessage(
   Json::Reader reader;
   reader.parse(msg->json_message(), value);
 
-  if (protocol_handler::MajorProtocolVersion::PROTOCOL_VERSION_HMI ==
+  if (protocol_handler::MajorProtocolVersion::PROTOCOL_VERSION_HMI !=
       msg->protocol_version()) {
-    const std::string& msg_method = ExtractMethodName(value);
-    if (msg_method.empty()) {
-      return ProcessResult::CANNOT_PROCESS;
-    }
-    PluginHMIFunctionsIterator subscribed_plugin_itr =
-        hmi_subscribers_.find(msg_method);
-    if (hmi_subscribers_.end() != subscribed_plugin_itr) {
-      return subscribed_plugin_itr->second->ProcessHMIMessage(msg);
-    }
+    return ProcessResult::CANNOT_PROCESS;
   }
 
-  return ProcessResult::CANNOT_PROCESS;
-}
-
-bool PluginManager::IsMessageForPlugin(application_manager::MessagePtr msg) {
-  DCHECK(msg);
-  if (!msg) {
-    LOG4CXX_ERROR(logger_, "Null pointer message was received.");
-    return false;
-  }
-  if (protocol_handler::MajorProtocolVersion::PROTOCOL_VERSION_UNKNOWN !=
-          msg->protocol_version() &&
-      protocol_handler::MajorProtocolVersion::PROTOCOL_VERSION_HMI !=
-          msg->protocol_version()) {
-    RCFunctionID id = static_cast<RCFunctionID>(msg->function_id());
-    return (mobile_subscribers_.find(id) != mobile_subscribers_.end());
-  } else {
-    return false;
-  }
-}
-
-bool PluginManager::IsHMIMessageForPlugin(application_manager::MessagePtr msg) {
-  DCHECK(msg);
-  if (!msg) {
-    LOG4CXX_ERROR(logger_, "Null pointer message was received.");
-    return false;
+  const std::string& msg_method = ExtractMethodName(value);
+  if (msg_method.empty()) {
+    return ProcessResult::CANNOT_PROCESS;
   }
 
-  Json::Value value;
-  Json::Reader reader;
-  reader.parse(msg->json_message(), value);
-  if (protocol_handler::MajorProtocolVersion::PROTOCOL_VERSION_HMI ==
-      msg->protocol_version()) {
-    std::string msg_method;
-    // Request or notification from HMI
-    if (value.isMember("method") && value["method"].isString()) {
-      msg_method = value["method"].asCString();
-      // Response from HMI
-    } else if (value.isMember("result") && value["result"].isMember("method") &&
-               value["result"]["method"].isString()) {
-      msg_method = value["result"]["method"].asCString();
-      // Error response from HMI
-    } else if (value.isMember("error") && value["error"].isMember("data") &&
-               value["error"]["data"].isMember("method") &&
-               value["error"]["data"]["method"].isString()) {
-      msg_method = value["error"]["data"]["method"].asCString();
-    } else {
-      LOG4CXX_WARN(logger_,
-                   "Message with HMI protocol version can not be handled by "
-                   "plugin manager, because required 'method' field was not "
-                   "found, or was containing an invalid string.");
-      return false;
-    }
+  const hmi_apis::FunctionID::eType function_id =
+      static_cast<hmi_apis::FunctionID::eType>(msg->function_id());
 
-    return (hmi_subscribers_.find(msg_method) != hmi_subscribers_.end());
+  if (hmi_apis::FunctionID::BasicCommunication_OnExitApplication ==
+      function_id) {
+    OnSDLEvent(functional_modules::SDLEvent::kApplicationExit,
+               msg->connection_key());
+  }
+  if (hmi_apis::FunctionID::SDL_OnAllowSDLFunctionality == function_id) {
+    OnSDLEvent(functional_modules::SDLEvent::kApplicationsDisabled);
   }
 
-  return false;
+  ProcessResult result = ProcessResult::CANNOT_PROCESS;
+  PluginHMIFunctionsIterator subscribed_plugin_itr =
+      hmi_subscribers_.find(msg_method);
+  if (hmi_subscribers_.end() != subscribed_plugin_itr) {
+    result = subscribed_plugin_itr->second->ProcessHMIMessage(msg);
+  }
+
+  return result;
 }
 
 void PluginManager::OnServiceStateChanged(ServiceState state) {
@@ -336,18 +303,6 @@ void PluginManager::OnAppHMILevelChanged(
 
 typedef std::map<ModuleID, ModulePtr>::value_type PluginsValueType;
 
-struct HandleApplicationUnregistered {
- private:
-  const uint32_t app_id_;
-
- public:
-  explicit HandleApplicationUnregistered(const uint32_t app_id)
-      : app_id_(app_id) {}
-  void operator()(PluginsValueType& x) {
-    x.second->OnUnregisterApplication(app_id_);
-  }
-};
-
 struct HandleSDLEvent {
  private:
   const functional_modules::SDLEvent event_;
@@ -360,12 +315,6 @@ struct HandleSDLEvent {
     p.second->OnSDLEvent(event_, app_id_);
   }
 };
-
-void PluginManager::OnUnregisterApplication(const uint32_t app_id) {
-  LOG4CXX_AUTO_TRACE(logger_);
-  std::for_each(
-      plugins_.begin(), plugins_.end(), HandleApplicationUnregistered(app_id));
-}
 
 void PluginManager::OnSDLEvent(SDLEvent event, const uint32_t application_id) {
   LOG4CXX_AUTO_TRACE(logger_);

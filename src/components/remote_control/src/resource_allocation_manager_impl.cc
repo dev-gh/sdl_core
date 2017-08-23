@@ -227,26 +227,6 @@ void ResourceAllocationManagerImpl::OnDriverDisallowed(
   list_of_rejected_resources.push_back(module_type);
 }
 
-void ResourceAllocationManagerImpl::OnUnregisterApplication(
-    const uint32_t app_id) {
-  LOG4CXX_AUTO_TRACE(logger_);
-
-  rejected_resources_for_application_.erase(app_id);
-  for (AllocatedResources::const_iterator it = allocated_resources_.begin();
-       it != allocated_resources_.end();) {
-    if (app_id == it->second) {
-      LOG4CXX_INFO(logger_,
-                   "Application " << app_id
-                                  << " is unregistered. Releasing resource "
-                                  << it->first);
-      resources_state_.erase(it->first);
-      it = allocated_resources_.erase(it);
-    } else {
-      ++it;
-    }
-  }
-}
-
 void ResourceAllocationManagerImpl::ResetAllAllocations() {
   LOG4CXX_AUTO_TRACE(logger_);
   allocated_resources_.clear();

@@ -42,6 +42,9 @@
 
 namespace functional_modules {
 
+/**
+ * @brief The SDLEvent enum defines SDL event that module can react on
+ */
 enum SDLEvent {
   kApplicationExit = 0,
   kApplicationUnregistered,
@@ -134,11 +137,10 @@ class GenericModule {
       mobile_apis::HMILevel::eType old_level) = 0;
 
   /**
-   * @brief OnUnregisterApplication handles application unregistering event
-   * @param app_id application id which was unregistered
+   * @brief OnSDLEvent Processes defined events coming from SDL
+   * @param event Event
+   * @param application_id Application id
    */
-  virtual void OnUnregisterApplication(const uint32_t app_id) = 0;
-
   virtual void OnSDLEvent(SDLEvent event, const uint32_t application_id) = 0;
 
  protected:
