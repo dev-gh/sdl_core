@@ -120,13 +120,6 @@ class RemoteControlPlugin : public RemotePluginInterface {
   functional_modules::ProcessResult HandleMessage(
       application_manager::MessagePtr msg);
 
-  /**
-   * @brief ProcessApplicationPolicyUpdate Checks if allowed modules list is
-   * changed for registered RC applications and releases in case some modules
-   * now out of the list
-   */
-  void ProcessApplicationPolicyUpdate();
-
   functional_modules::PluginInfo plugin_info_;
   bool is_scan_started_;
   request_controller::RequestController request_controller_;
