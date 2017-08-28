@@ -94,7 +94,7 @@ AcquireResult::eType ResourceAllocationManagerImpl::AcquireResource(
   }
 }
 
-bool ResourceAllocationManagerImpl::ReleaseResource(
+void ResourceAllocationManagerImpl::ReleaseResource(
     const std::string& module_type, const uint32_t application_id) {
   LOG4CXX_AUTO_TRACE(logger_);
   LOG4CXX_DEBUG(logger_, "Release " << module_type << " by " << application_id);
@@ -102,7 +102,7 @@ bool ResourceAllocationManagerImpl::ReleaseResource(
       allocated_resources_.find(module_type);
   if (allocated_resources_.end() == allocation) {
     LOG4CXX_DEBUG(logger_, "Resource " << module_type << " is not allocated.");
-    return false;
+    return;
   }
 
   if (application_id != allocation->second) {
@@ -110,12 +110,12 @@ bool ResourceAllocationManagerImpl::ReleaseResource(
                   "Resource " << module_type
                               << " is allocated by different application "
                               << allocation->second);
-    return false;
+    return;
   }
 
   allocated_resources_.erase(allocation);
   LOG4CXX_DEBUG(logger_, "Resource " << module_type << " is released.");
-  return true;
+  return;
 }
 
 void ResourceAllocationManagerImpl::ProcessApplicationPolicyUpdate() {
